@@ -22,7 +22,7 @@ import (
 //go:embed web/index.html
 var web embed.FS
 
-const Version = "0.1.0"
+const Version = "0.2.0-preview.1"
 
 func main() {
 	secretBytes := make([]byte, 32)
@@ -94,36 +94,36 @@ func main() {
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, engine.MaxBytes+(3<<20))
 		if err := r.ParseMultipartForm(engine.MaxBytes + (1 << 20)); err != nil {
-			http.Error(w, "Invalid or oversized upload / Tệp không hợp lệ hoặc quá lớn", http.StatusBadRequest)
+			http.Error(w, localized(r,"Invalid or oversized upload","Tệp không hợp lệ hoặc quá lớn"), http.StatusBadRequest)
 			return
 		}
 		uploads := r.MultipartForm.File["files"]
 		if len(uploads) == 0 || len(uploads) > engine.MaxFiles {
-			http.Error(w, "Select 1–50 files", http.StatusBadRequest)
+			http.Error(w, localized(r,"Select 1–50 files","Chọn 1–50 tệp"), http.StatusBadRequest)
 			return
 		}
 		var files []engine.Input
 		for _, f := range uploads {
 			if f.Size > engine.MaxBytes {
-				http.Error(w, "File too large", http.StatusBadRequest)
+				http.Error(w, localized(r,"File too large","Tệp quá lớn"), http.StatusBadRequest)
 				return
 			}
 			src, e := f.Open()
 			if e != nil {
-				http.Error(w, "Cannot read file", 400)
+				http.Error(w, localized(r,"Cannot read file","Không đọc được tệp"), 400)
 				return
 			}
 			data, e := io.ReadAll(io.LimitReader(src, engine.MaxBytes+1))
 			_ = src.Close()
 			if e != nil || len(data) > engine.MaxBytes {
-				http.Error(w, "Cannot read / oversized file", 400)
+				http.Error(w, localized(r,"Cannot read / oversized file","Không đọc được tệp hoặc tệp quá lớn"), 400)
 				return
 			}
 			files = append(files, engine.Input{Name: f.Filename, Data: data})
 		}
 		result, e := engine.Run(r.FormValue("operation"), files)
 		if e != nil {
-			http.Error(w, e.Error(), http.StatusUnprocessableEntity)
+			http.Error(w, localized(r,"Processing failed: "+e.Error(),"Xử lý thất bại: "+e.Error()), http.StatusUnprocessableEntity)
 			return
 		}
 		w.Header().Set("Content-Type", result.ContentType)
@@ -165,3 +165,5 @@ func critical(err error) {
 		fmt.Fprintln(os.Stderr, err)
 	}
 }
+
+func localized(r *http.Request, en, vi string) string {if r.Header.Get("X-OpenDesk-Lang")=="vi" {return vi};return en}

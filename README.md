@@ -4,9 +4,9 @@
 
 ![OpenDesk Free desktop preview](assets/desktop-preview.png)
 
-> **Status: v0.1.0 initial public preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
+> **Status: v0.2.0-preview.1 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
 
-## Features in v0.1.0 / Chức năng đã có
+## Features in v0.2 preview / Các chức năng hiện có
 
 - Organize uploaded documents into a ZIP with folders by type and SHA-256 manifest. No original file is changed.
 - CSV to Excel XLSX (one input CSV per worksheet; every imported cell is saved as text to preserve zeros and prevent formula execution).
@@ -15,7 +15,7 @@
 - Combine UTF-8 TXT/Markdown documents with file-name separators.
 - Vietnamese/English UI, local HTTP server limited to `127.0.0.1`, randomized port, per-session protection token, no telemetry, no paid API.
 
-**Not yet supported:** scanned-document OCR, PDF merge/split/edit, direct Microsoft Word `.doc` processing, Excel XLSX editing, AI chat, cloud sync or automation. These are roadmap targets, not working features.
+**New in v0.2 preview:** English is the default language; a dropdown switches to Vietnamese and saves your preference locally. PDF merge, split to pages and rotate 90° clockwise are added using Apache-2.0-licensed pdfcpu. **Not yet supported:** OCR, searchable scanned PDFs, editing PDF text, Excel editing and workflow automation. This is not a stable release.
 
 ## System requirements
 
@@ -32,7 +32,7 @@ After the first build, open the repository's **Actions > Build and test Windows 
 
 ## Compile from source
 
-Go >=1.23, standard library only:
+Go >=1.25, pdfcpu v0.16.3 Apache-2.0 dependency (downloaded during build):
 
 ```powershell
 go test ./...
@@ -59,3 +59,6 @@ Please use Issues to report bugs, including Windows version, input format (do no
 ## License
 
 MIT. Copyright © 2026 OpenDesk Free contributors.
+
+### International users / Người dùng quốc tế
+English is selected by default for new users. Switch to **Tiếng Việt** in the Language dropdown. Each browser saves its own preference on this PC. No account required.

@@ -81,6 +81,8 @@ func Run(op string, files []Input) (Result, error) {
 		return duplicates(files)
 	case "join-text":
 		return joinText(files)
+	case "pdf-merge", "pdf-split", "pdf-rotate":
+		return pdfProcess(op, files)
 	default:
 		return Result{}, errors.New("unknown operation")
 	}

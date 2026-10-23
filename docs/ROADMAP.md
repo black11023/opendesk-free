@@ -5,7 +5,7 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 | Stage | Priority | Scope | Acceptance gate |
 |---|---|---|---|
 | V0.1 — initial preview | P0 | Bilingual desktop GUI, offline operations (organize, CSV→XLSX, DOCX→TXT, hashes/duplicates, combine text), Windows EXE + installer, README, MIT | Go tests PASS, Windows EXE builds, malware scan, clean-install/run/uninstall manual Windows test; no claim of stability without that check |
-| V0.2 — PDF/OCR | P0 | PDF merge/split/rotate, OCR Vietnamese + English in scanned PDF/image, searchable PDF, progress and robust error states | Real PDF scanned/digital test set; document originals unchanged; text accuracy and page count reviewed |
+| V0.2 — PDF/OCR | P0 | PDF merge/split/rotate implemented in preview; OCR Vietnamese/English, searchable PDF and richer progress still pending | Real PDF scanned/digital test set; document originals unchanged; text accuracy and page count reviewed |
 | V0.3 — Excel/Word automation | P1 | Excel matching via explicitly selected keys, comparison report, highlight mismatches; DOCX table extraction; batch transforms | Fixtures with quantities, encodings, missing values and formulas; no silent number coercion |
 | V0.4 — Workflow builder | P1 | Saved local recipes, previews, rollback-friendly outputs, per-step audit/logs | End-to-end recipes on multiple PCs; no destructive automation without confirmation |
 | V0.5 — Accessibility + portability | P1 | Screen reader, full keyboard UX, low-RAM profiling, Linux/macOS builds | Usability tests and platform-specific installers |
