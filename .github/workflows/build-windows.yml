@@ -25,6 +25,8 @@ jobs:
           $script = [regex]::Match($html, '(?s)<script>(.*?)</script>').Groups[1].Value
           Set-Content "$env:RUNNER_TEMP/opendesk-ui.js" $script -Encoding utf8
           node --check "$env:RUNNER_TEMP/opendesk-ui.js"
+      - name: Verify bilingual UI translations
+        run: node --test tests/i18n.test.mjs
       - name: Build Windows application (GUI, no console)
         shell: pwsh
         run: |
