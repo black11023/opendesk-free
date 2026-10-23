@@ -97,3 +97,29 @@ func TestPDFInvalidPageSelectionDoesNotReturnPartialResult(t *testing.T){
   if _,e:=Run(tc.op,tc.files,tc.selection...);e==nil{t.Errorf("%s: expected failure",tc.op)}
  }
 }
+
+func readPageContents(t *testing.T, pdf []byte) []string {
+ t.Helper()
+ var content []string
+ err:=api.ExtractContent(context.Background(),bytes.NewReader(pdf),[]string{"1-"},func(r io.Reader,n int) error {
+   b,e:=io.ReadAll(r);if e!=nil{return e}
+   content=append(content,string(b));return nil
+ },nil)
+ if err!=nil{t.Fatal(err)}
+ return content
+}
+func TestPDFSourcePageContentAndMergeOrder(t *testing.T){
+ source:=twoPageFixture(t)
+ selected,e:=Run("pdf-extract",[]Input{source},"2")
+ if e!=nil{t.Fatal(e)}
+ content:=readPageContents(t,selected.Data)
+ if len(content)!=1||!strings.Contains(content[0],"test page 2")||strings.Contains(content[0],"test page 1"){
+   t.Fatalf("selected wrong page content: %q",content)
+ }
+ merged,e:=Run("pdf-merge",[]Input{source,source},"2","1")
+ if e!=nil{t.Fatal(e)}
+ mergedContents:=readPageContents(t,merged.Data)
+ if len(mergedContents)!=2||!strings.Contains(mergedContents[0],"test page 2")||!strings.Contains(mergedContents[1],"test page 1"){
+   t.Fatalf("merge did not preserve selected page order: %q",mergedContents)
+ }
+}
