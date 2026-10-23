@@ -18,3 +18,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Windows binaries distributed through GitHub Releases (not in git history).
 - Document all limitations; never call a roadmap item implemented.
 - Keep updates reversible and preserve users' original documents.
+
+### PDF page selection acceptance (Preview 4)
+
+- For a source PDF with hundreds of pages, select e.g. page `2` only; no unselected pages may enter the output.
+- `2,5,10-12` and `7,2,5` must preserve requested page order in a single extracted PDF.
+- Merge allows choosing pages from each source file and reordering input files with arrows.
+- Single-PDF extraction and per-page ZIP extraction are separate user-selectable outputs; invalid page indices must fail with a visible error.

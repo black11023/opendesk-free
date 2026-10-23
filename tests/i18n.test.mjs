@@ -31,3 +31,14 @@ test('every inline operation label supplies both languages',()=>{
  for(const m of tagged)assert.ok(m[1]&&m[2]);
  for(const op of ['pdf-merge','pdf-split','pdf-rotate']) assert.ok(html.includes('data-op="'+op+'"'));
 });
+
+test('PDF page-range controls and server form fields are wired in both languages',()=>{
+ for(const id of ['pdf-options','pdf-heading','pdf-controls'])assert.ok(html.includes('id="'+id+'"'));
+ for(const prop of ['pdfRange','pdfSplitHelp','pdfMergeHelp','pdfCombined','pdfSeparate','pdfMoveUp','pdfMoveDown']){
+  assert.ok(prop in translations.vi&&prop in translations.en,prop);
+ }
+ assert.match(html,/form\.append\('pages',state\.pageText\)/);
+ assert.match(html,/form\.append\('page_ranges',state\.ranges\.get\(f\)\|\|''\)/);
+ assert.match(html,/state\.files\[i\].*state\.files\[next\]/);
+ assert.match(html,/'pdf-extract'/);
+});
