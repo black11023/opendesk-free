@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
+	"encoding/json"
 	"embed"
 	"encoding/hex"
 	"fmt"
@@ -17,12 +19,13 @@ import (
 	"time"
 
 	"opendesk-free/internal/engine"
+	"opendesk-free/internal/ocr"
 )
 
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.3.0-preview.1"
+const Version = "0.4.0-preview.1"
 
 func main() {
 	secretBytes := make([]byte, 32)
@@ -96,6 +99,13 @@ func main() {
 		return true
 	}
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
+	mux.HandleFunc("GET /ocr-status",func(w http.ResponseWriter,r *http.Request){
+  if !auth(w,r){return}
+  w.Header().Set("Content-Type","application/json; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _=json.NewEncoder(w).Encode(ocr.Probe(r.Context()))
+ })
 	mux.HandleFunc("POST /process", func(w http.ResponseWriter, r *http.Request) {
 		if !auth(w, r) {
 			return
@@ -141,7 +151,15 @@ func main() {
 			}
 			files = append(files, engine.Input{Name: f.Filename, Data: data})
 		}
-		result, e := engine.Run(op, files, pageSelections...)
+		var result engine.Result
+        var e error
+        if op=="ocr-images"{
+           ctx,cancel:=context.WithTimeout(r.Context(),3*time.Minute)
+           defer cancel()
+           result,e=ocr.RunImages(ctx,files,r.FormValue("ocr_lang"),r.FormValue("ocr_format"))
+        }else{
+           result,e=engine.Run(op, files, pageSelections...)
+        }
 		if e != nil {
 			http.Error(w, localized(r,"Processing failed: "+e.Error(),"Xử lý thất bại: "+e.Error()), http.StatusUnprocessableEntity)
 			return

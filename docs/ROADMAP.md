@@ -36,3 +36,9 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - **V1.0:** Windows install/uninstall acceptance tests, multilingual accessibility, project licensing/SBOM, release signatures when feasible; Linux/macOS packages after real platform QA.
 
 **Status definitions:** BUILT-IN (available now), OPTIONAL ADAPTER (implemented but requires separately installed provider), DIRECTORY (external link only), ROADMAP (not implemented). Never represent DIRECTORY as installed or integrated.
+
+### V0.4 OCR gate status
+
+- Optional Tesseract installed-locally adapter, eng/vie status detection, image → TXT and searchable PDF, fail-closed for missing engine/language.
+- Tesseract executable + traineddata are **not bundled** in installer. A preinstalled Tesseract is required.
+- Scanned source-PDF OCR, multilingual accuracy benchmark, Windows end-user acceptance and single-click optional install are pending. Do not label OCR complete across all formats.
