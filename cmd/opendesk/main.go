@@ -22,7 +22,7 @@ import (
 //go:embed web/index.html
 var web embed.FS
 
-const Version = "0.2.0-preview.2"
+const Version = "0.2.0-preview.3"
 
 func main() {
 	secretBytes := make([]byte, 32)
@@ -102,6 +102,18 @@ func main() {
 			http.Error(w, localized(r,"Select 1–50 files","Chọn 1–50 tệp"), http.StatusBadRequest)
 			return
 		}
+		op := r.FormValue("operation")
+		pageSelections := r.MultipartForm.Value["page_ranges"]
+		if op == "pdf-merge" {
+			if len(pageSelections) != len(uploads) {
+				http.Error(w, localized(r,"Missing PDF page selections","Thiếu lựa chọn trang PDF"),400)
+				return
+			}
+		} else if op == "pdf-split" || op == "pdf-extract" {
+			pageSelections = []string{r.FormValue("pages")}
+		} else {
+			pageSelections = nil
+		}
 		var files []engine.Input
 		for _, f := range uploads {
 			if f.Size > engine.MaxBytes {
@@ -121,7 +133,7 @@ func main() {
 			}
 			files = append(files, engine.Input{Name: f.Filename, Data: data})
 		}
-		result, e := engine.Run(r.FormValue("operation"), files)
+		result, e := engine.Run(op, files, pageSelections...)
 		if e != nil {
 			http.Error(w, localized(r,"Processing failed: "+e.Error(),"Xử lý thất bại: "+e.Error()), http.StatusUnprocessableEntity)
 			return

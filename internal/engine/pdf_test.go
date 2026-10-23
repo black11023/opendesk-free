@@ -56,3 +56,44 @@ func TestPDFRejectsWrongFilesAndCounts(t *testing.T){
  }
  for _,c:=range cases{if _,err:=Run(c.op,c.files);err==nil{t.Errorf("accepted invalid %s",c.op)}}
 }
+
+func TestSelectedPagesAndOrdering(t *testing.T){
+ p:=twoPageFixture(t)
+ selected,e:=Run("pdf-extract",[]Input{p},"2");if e!=nil{t.Fatal(e)}
+ checkPages(t,selected.Data,1)
+ reversed,e:=Run("pdf-extract",[]Input{p},"2,1");if e!=nil{t.Fatal(e)}
+ checkPages(t,reversed.Data,2)
+ merged,e:=Run("pdf-merge",[]Input{p,p},"2","1");if e!=nil{t.Fatal(e)}
+ checkPages(t,merged.Data,2)
+ parts,e:=Run("pdf-split",[]Input{p},"2");if e!=nil{t.Fatal(e)}
+ z,e:=zip.NewReader(bytes.NewReader(parts.Data),int64(len(parts.Data)));if e!=nil{t.Fatal(e)}
+ if len(z.File)!=1||z.File[0].Name!="OpenDesk_Page_0002.pdf"{t.Fatalf("wrong selected output %+v",z.File)}
+}
+func TestPageParserStrictBounds(t *testing.T){
+ for _,tc:=range []struct{spec string;pages int;want []int}{
+  {"2",550,[]int{2}},
+  {"7,2,5",10,[]int{7,2,5}},
+  {"3-5",10,[]int{3,4,5}},
+  {"5-3",10,[]int{5,4,3}},
+  {"2,2",3,[]int{2,2}},
+ }{
+  got,e:=ParsePageSelection(tc.spec,tc.pages);if e!=nil{t.Fatal(e)}
+  if len(got)!=len(tc.want){t.Fatalf("%s: got %v",tc.spec,got)}
+  for i:=range got{if got[i]!=tc.want[i]{t.Fatalf("%s: got %v",tc.spec,got)}}
+ }
+ for _,spec:=range []string{"0","3","1-4","x","1,,2","1-","-1","1--2","1.5","1;2"}{
+  if _,e:=ParsePageSelection(spec,2);e==nil{t.Errorf("expected rejection for %q",spec)}
+ }
+ if _,e:=ParsePageSelection("",550);e==nil{t.Fatal("large PDF must require page selection")}
+}
+func TestPDFInvalidPageSelectionDoesNotReturnPartialResult(t *testing.T){
+ src:=twoPageFixture(t)
+ for _,tc:=range []struct{op string;files []Input;selection []string}{
+  {"pdf-extract",[]Input{src},[]string{"3"}},
+  {"pdf-split",[]Input{src},[]string{"1,1"}},
+  {"pdf-merge",[]Input{src,src},[]string{"1"}},
+  {"pdf-merge",[]Input{src,src},[]string{"1","5"}},
+ } {
+  if _,e:=Run(tc.op,tc.files,tc.selection...);e==nil{t.Errorf("%s: expected failure",tc.op)}
+ }
+}

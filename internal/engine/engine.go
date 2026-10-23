@@ -53,7 +53,7 @@ func SafeName(s string) string {
 	return name
 }
 
-func Run(op string, files []Input) (Result, error) {
+func Run(op string, files []Input, pageSelections ...string) (Result, error) {
 	if len(files) == 0 {
 		return Result{}, errors.New("Please select at least one file / Chọn ít nhất một tệp")
 	}
@@ -81,8 +81,8 @@ func Run(op string, files []Input) (Result, error) {
 		return duplicates(files)
 	case "join-text":
 		return joinText(files)
-	case "pdf-merge", "pdf-split", "pdf-rotate":
-		return pdfProcess(op, files)
+	case "pdf-merge", "pdf-split", "pdf-extract", "pdf-rotate":
+		return pdfProcess(op, files, pageSelections)
 	default:
 		return Result{}, errors.New("unknown operation")
 	}
