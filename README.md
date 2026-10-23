@@ -46,7 +46,7 @@ The installer sources are Windows-specific. On Linux, cross-compile using `GOOS=
 ## Privacy and security
 
 - Runs solely on loopback (`127.0.0.1`). Not available to the internet or other computers.
-- Files are processed in memory, with no persistent database and no upload to external providers.
+- Most operations run in memory; PDF splitting may use a temporary local directory deleted after processing. There is no persistent document database or external upload.
 - POST operations require a secret token and Origin check.
 - No automated file deletion, renaming or modification of original uploads.
 - An operation may consume up to tens of megabytes of RAM and processing time depending on input.
@@ -62,3 +62,7 @@ MIT. Copyright © 2026 OpenDesk Free contributors.
 
 ### International users / Người dùng quốc tế
 English is selected by default for new users. Switch to **Tiếng Việt** in the Language dropdown. Each browser saves its own preference on this PC. No account required.
+
+## Public preview releases
+
+After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.2.0-preview.1** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
