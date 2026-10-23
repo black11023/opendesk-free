@@ -25,3 +25,14 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - `2,5,10-12` and `7,2,5` must preserve requested page order in a single extracted PDF.
 - Merge allows choosing pages from each source file and reordering input files with arrows.
 - Single-PDF extraction and per-page ZIP extraction are separate user-selectable outputs; invalid page indices must fail with a visible error.
+
+## OpenDesk Super Suite expansion (approved direction, NOT all implemented)
+
+- **V0.3 P0:** professional searchable Free Tools Hub; real image-to-PDF module; module manifest/registry and user-visible integration status. Source-based CI gates.
+- **V0.4 P0:** OCR for Vietnamese/English scanned images and PDFs, using Tesseract language packs with documented optional local installation; preserve page layout wherever possible. No pretend OCR.
+- **V0.5 P1:** LibreOffice command-line adapters for Office PDF export if separately installed, constrained file paths and process limits; no automatic binary download.
+- **V0.6 P1:** accessible image conversions, audio/video conversion using optional FFmpeg, supported secure adapters; resource budgeting.
+- **V0.7 P1:** local workflow builder, saved recipes, audit, preview/undo workflows, no destructive action by default.
+- **V1.0:** Windows install/uninstall acceptance tests, multilingual accessibility, project licensing/SBOM, release signatures when feasible; Linux/macOS packages after real platform QA.
+
+**Status definitions:** BUILT-IN (available now), OPTIONAL ADAPTER (implemented but requires separately installed provider), DIRECTORY (external link only), ROADMAP (not implemented). Never represent DIRECTORY as installed or integrated.

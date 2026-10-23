@@ -4,7 +4,7 @@
 
 ![OpenDesk Free desktop preview](assets/desktop-preview.png)
 
-> **Status: v0.2.0-preview.4 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
+> **Status: v0.3.0-preview.1 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
 
 ## Features in v0.2 preview / Các chức năng hiện có
 
@@ -65,7 +65,7 @@ English is selected by default for new users. Switch to **Tiếng Việt** in th
 
 ## Public preview releases
 
-After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.2.0-preview.4** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
+After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.3.0-preview.1** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
 
 **Preview 2:** language cookie contains only `en` or `vi`. No document contents or account identifiers are stored in it.
 
@@ -73,4 +73,10 @@ After tests and Windows EXE builds succeed on `main`, the workflow creates the *
 
 For **Extract PDF pages**, enter `2`, `1,5,9`, `10-15`, or even `7,2,5`; the custom order is honored. Leave blank to select all pages (limited to 300 output pages). Download one combined PDF or individual PDFs inside a ZIP. For **Merge PDFs**, choose a page range for each file and use the arrows to change file order. Supported input: up to 5,000 pages/document under the existing 40 MB total upload limit; max 300 selected output pages; ZIP mode up to 100 pages. Page indexes start from **1** and out-of-bounds selection is rejected. Original source files are never overwritten.
 
-**v0.2 Preview 4:** Added per-PDF page selection and input order controls to the bilingual app. Download selected pages into one PDF or as separate PDF files in a ZIP. Build and regression tests must pass before public prerelease. [Latest preview](https://github.com/black11023/opendesk-free/releases/tag/v0.2.0-preview.4).
+**v0.2 Preview 4:** Added per-PDF page selection and input order controls to the bilingual app. Download selected pages into one PDF or as separate PDF files in a ZIP. Build and regression tests must pass before public prerelease. [Latest preview](https://github.com/black11023/opendesk-free/releases/tag/v0.3.0-preview.1).
+
+## OpenDesk Tools Hub — 0.3 preview
+
+A professional local **tools hub** with search, category filters, English/Vietnamese labels and a curated catalog of 44 independent third-party free/open-source projects. The catalog is stored in the app, without telemetry or background downloads. **Catalog entries are links, not embedded tools or guaranteed integrations.** Upstream tools may need separate installation, resources and licensing review.
+
+**New working native feature:** PNG/JPG images to one PDF (one page per image) using existing pdfcpu library, max 25 images, 20 MP per image, 40 MB combined upload. Originals remain untouched. See [integration blueprint](docs/INTEGRATION_BLUEPRINT.md), [landscape](docs/SOFTWARE_LANDSCAPE_2026.md) and [legal checks](docs/LICENSES_AND_INTEGRATIONS.md).

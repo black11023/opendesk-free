@@ -19,10 +19,10 @@ import (
 	"opendesk-free/internal/engine"
 )
 
-//go:embed web/index.html
+//go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.2.0-preview.4"
+const Version = "0.3.0-preview.1"
 
 func main() {
 	secretBytes := make([]byte, 32)
@@ -62,9 +62,17 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Security-Policy", `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`)
+		w.Header().Set("Content-Security-Policy", `default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`)
 		_, _ = io.WriteString(w, page)
 	})
+	mux.HandleFunc("GET /catalog.js", func(w http.ResponseWriter, r *http.Request) {
+  if !sameHost(w,r){return}
+  data,e:=web.ReadFile("web/catalog.js");if e!=nil{http.Error(w,"Catalog unavailable",500);return}
+  w.Header().Set("Content-Type","text/javascript; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _,_=w.Write(data)
+ })
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if !sameHost(w, r) {
 			return
