@@ -26,7 +26,8 @@ func imagesPDF(files []Input) (Result, error) {
   if ext!=".png"&&ext!=".jpg"&&ext!=".jpeg"{return Result{},fmt.Errorf("only PNG/JPG is supported: %s",SafeName(f.Name))}
   cfg,format,e:=image.DecodeConfig(bytes.NewReader(f.Data))
   if e!=nil{return Result{},fmt.Errorf("invalid image %s: %w",SafeName(f.Name),e)}
-  if format!="png"&&format!="jpeg"{return Result{},fmt.Errorf("image format mismatch: %s",SafeName(f.Name))}
+  if (format=="png"&&ext!=".png")||(format=="jpeg"&&ext!=".jpg"&&ext!=".jpeg"){return Result{},fmt.Errorf("image extension does not match content: %s",SafeName(f.Name))}
+  if format!="png"&&format!="jpeg"{return Result{},fmt.Errorf("unsupported image data: %s",SafeName(f.Name))}
   if cfg.Width<1||cfg.Height<1||int64(cfg.Width)*int64(cfg.Height)>20_000_000{return Result{},fmt.Errorf("image dimensions outside 20 MP limit: %s",SafeName(f.Name))}
   images=append(images,bytes.NewReader(f.Data))
  }
