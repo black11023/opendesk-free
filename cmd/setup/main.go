@@ -19,7 +19,7 @@ import (
 //go:embed payload/OpenDeskFree.exe
 var payload embed.FS
 
-const version = "0.3.0-preview.1"
+const version = "0.4.0-preview.1"
 
 var user32 = syscall.NewLazyDLL("user32.dll")
 var msgBox = user32.NewProc("MessageBoxW")
