@@ -1,0 +1,167 @@
+package main
+
+import (
+	"crypto/rand"
+	"embed"
+	"encoding/hex"
+	"fmt"
+	"html"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
+	"strings"
+	"time"
+
+	"opendesk-free/internal/engine"
+)
+
+//go:embed web/index.html
+var web embed.FS
+
+const Version = "0.1.0"
+
+func main() {
+	secretBytes := make([]byte, 32)
+	if _, err := rand.Read(secretBytes); err != nil {
+		critical(err)
+		return
+	}
+	token := hex.EncodeToString(secretBytes)
+	ln, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		critical(err)
+		return
+	}
+	mux := http.NewServeMux()
+	expectedHost := ln.Addr().String()
+	// Reject DNS rebinding and alternate Host headers, even for requests on loopback.
+	sameHost := func(w http.ResponseWriter, r *http.Request) bool {
+		if r.Host != expectedHost {
+			http.Error(w, "Forbidden Host", http.StatusForbidden)
+			return false
+		}
+		return true
+	}
+	htmlBytes, err := web.ReadFile("web/index.html")
+	if err != nil {
+		critical(err)
+		return
+	}
+	page := strings.ReplaceAll(string(htmlBytes), "__TOKEN__", html.EscapeString(token))
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		if !sameHost(w, r) {
+			return
+		}
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Security-Policy", `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`)
+		_, _ = io.WriteString(w, page)
+	})
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		if !sameHost(w, r) {
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = io.WriteString(w, "OpenDesk Free "+Version+" OK")
+	})
+	auth := func(w http.ResponseWriter, r *http.Request) bool {
+		// A random per-process token prevents third-party websites from invoking local file operations.
+		if !sameHost(w, r) {
+			return false
+		}
+		if r.Header.Get("X-OpenDesk-Token") != token {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return false
+		}
+		if o := r.Header.Get("Origin"); o != "" && o != "http://"+r.Host {
+			http.Error(w, "Invalid Origin", http.StatusForbidden)
+			return false
+		}
+		return true
+	}
+	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
+	mux.HandleFunc("POST /process", func(w http.ResponseWriter, r *http.Request) {
+		if !auth(w, r) {
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, engine.MaxBytes+(3<<20))
+		if err := r.ParseMultipartForm(engine.MaxBytes + (1 << 20)); err != nil {
+			http.Error(w, "Invalid or oversized upload / Tệp không hợp lệ hoặc quá lớn", http.StatusBadRequest)
+			return
+		}
+		uploads := r.MultipartForm.File["files"]
+		if len(uploads) == 0 || len(uploads) > engine.MaxFiles {
+			http.Error(w, "Select 1–50 files", http.StatusBadRequest)
+			return
+		}
+		var files []engine.Input
+		for _, f := range uploads {
+			if f.Size > engine.MaxBytes {
+				http.Error(w, "File too large", http.StatusBadRequest)
+				return
+			}
+			src, e := f.Open()
+			if e != nil {
+				http.Error(w, "Cannot read file", 400)
+				return
+			}
+			data, e := io.ReadAll(io.LimitReader(src, engine.MaxBytes+1))
+			_ = src.Close()
+			if e != nil || len(data) > engine.MaxBytes {
+				http.Error(w, "Cannot read / oversized file", 400)
+				return
+			}
+			files = append(files, engine.Input{Name: f.Filename, Data: data})
+		}
+		result, e := engine.Run(r.FormValue("operation"), files)
+		if e != nil {
+			http.Error(w, e.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		w.Header().Set("Content-Type", result.ContentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		_, _ = w.Write(result.Data)
+	})
+	mux.HandleFunc("POST /quit", func(w http.ResponseWriter, r *http.Request) {
+		if !auth(w, r) {
+			return
+		}
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte("bye"))
+		go func() { time.Sleep(200 * time.Millisecond); _ = srv.Close() }()
+	})
+	url := "http://" + ln.Addr().String()
+	log.Printf("OpenDesk Free v%s | local only: %s", Version, url)
+	go func() { time.Sleep(350 * time.Millisecond); _ = openBrowser(url) }()
+	if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+		critical(err)
+	}
+}
+func openBrowser(url string) error {
+	switch runtime.GOOS {
+	case "windows":
+		return exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		return exec.Command("open", url).Start()
+	default:
+		return exec.Command("xdg-open", url).Start()
+	}
+}
+func critical(err error) {
+	log.Printf("OpenDesk Free error: %v", err)
+	if runtime.GOOS == "windows" {
+		_ = exec.Command("powershell.exe", "-NoProfile", "-Command", `Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('OpenDesk Free could not start. See the developer documentation.','OpenDesk Free')`).Run()
+	} else {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}

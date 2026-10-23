@@ -1,0 +1,6 @@
+# Local executables and packaging output
+/dist/
+/cmd/setup/payload/*.exe
+*.log
+.DS_Store
+Thumbs.db

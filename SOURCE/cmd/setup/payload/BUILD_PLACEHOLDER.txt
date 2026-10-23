@@ -1,0 +1,2 @@
+The desktop executable is compiled into this directory before building the setup executable.
+The CI workflow builds cmd/setup/payload/OpenDeskFree.exe first; it is intentionally ignored by git.

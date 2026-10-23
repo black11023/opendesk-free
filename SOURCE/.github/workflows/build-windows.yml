@@ -1,0 +1,38 @@
+name: Build and test Windows installer
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build Windows application (GUI, no console)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          go build -trimpath -ldflags '-s -w -H=windowsgui' -o cmd/setup/payload/OpenDeskFree.exe ./cmd/opendesk
+          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.1.0.exe
+      - name: Run automated tests
+        run: go test ./...
+      - name: Build Windows setup executable
+        shell: pwsh
+        run: |
+          go build -trimpath -ldflags '-s -w -H=windowsgui' -o dist/OpenDeskFree_Setup_0.1.0.exe ./cmd/setup
+          Get-FileHash dist/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $(Split-Path -Leaf $_.Path)" } | Out-File dist/SHA256SUMS.txt -Encoding utf8
+      - name: Upload installer build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenDeskFree-Windows-v0.1.0
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
