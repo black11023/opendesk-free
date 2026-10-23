@@ -81,6 +81,8 @@ func Run(op string, files []Input, pageSelections ...string) (Result, error) {
 		return duplicates(files)
 	case "join-text":
 		return joinText(files)
+	case "images-pdf":
+		return imagesPDF(files)
 	case "pdf-merge", "pdf-split", "pdf-extract", "pdf-rotate":
 		return pdfProcess(op, files, pageSelections)
 	default:
