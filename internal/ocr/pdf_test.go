@@ -24,8 +24,10 @@ func (m *fakePDFExec) Execute(ctx context.Context,bin string,args []string) erro
  if m.omit{return nil}
  if m.bad{b=[]byte("not PDF")}
  if m.wrongPages{
-  b,e=engine.Run("pdf-extract",[]engine.Input{{Name:"input.pdf",Data:b}},"1")
+  var picked engine.Result
+  picked,e=engine.Run("pdf-extract",[]engine.Input{{Name:"input.pdf",Data:b}},"1")
   if e!=nil{return e}
+  b=picked.Data
  }
  return os.WriteFile(out,b,0600)
 }
