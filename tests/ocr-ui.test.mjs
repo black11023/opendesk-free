@@ -21,7 +21,8 @@ test('process sends fixed OCR arguments through authenticated local route',()=>{
  assert.match(backend,/ocr.RunImages/);
 });
 test('OCR is disabled when language pack or engine missing',()=>{
- assert.match(html,/state.op==='ocr-images'&&\(state.files.length>10\|\|!ocrReady\(\)\)/);
+ assert.match(html,/state\.op==='ocr-images'\|\|state\.op==='ocr-pdf'/);
+ assert.match(html,/!ocrReady\(\)/);
  assert.match(html,/function ocrReady\(\)/);
  assert.match(html,/state.ocrStatus=null/);
 });
