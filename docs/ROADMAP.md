@@ -48,3 +48,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Optional external OCRmyPDF adapter discovered on PATH; requires separately installed Tesseract with selected traineddata and OCRmyPDF upstream dependencies.
 - Actual PDF input: preserve original, fail closed on malformed PDF, no shell, private temporary files removed, check page count of final result, limit pages/size/time.
 - Automated tests use an injected fake runner to verify arguments, rejection, output verification and temp cleanup; **this is not OCR recognition accuracy validation**. End-user PDF OCR requires live Windows acceptance with OCRmyPDF installed.
+
+### V0.5 Preview 1 — LibreOffice PDF adapter
+
+- Optional local conversion for Word, Excel and PowerPoint families. Convert files separately in a private temporary profile; original files remain untouched.
+- Verified output structure and page counts with strict resource limits; mock-converter unit tests cover errors and cleanup, not real-world layout fidelity.
+- Accessibility and English-first onboarding improved, README rewritten, transparent integrated/optional/external/planned statuses.
+- Next: real native Windows install/uninstall and LibreOffice fixture rendering, error tracing and stronger multilingual docs.

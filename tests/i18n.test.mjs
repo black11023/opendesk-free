@@ -42,3 +42,12 @@ test('PDF page-range controls and server form fields are wired in both languages
  assert.match(html,/state\.files\[i\].*state\.files\[next\]/);
  assert.match(html,/'pdf-extract'/);
 });
+
+test('Office conversion UI requires detected local LibreOffice',()=>{
+ assert.match(html,/data-op="office-pdf"/);
+ assert.match(html,/data-en="Office → PDF"/);
+ assert.match(html,/data-vi="Văn phòng → PDF"/);
+ assert.match(html,/id="office-options"/);
+ assert.match(html,/fetch\('\/office-status'/);
+ assert.match(html,/state\.officeStatus\?\.installed/);
+});
