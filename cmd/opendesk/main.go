@@ -25,7 +25,7 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.4.0-preview.1"
+const Version = "0.4.0-preview.2"
 
 func main() {
 	secretBytes := make([]byte, 32)
@@ -106,6 +106,13 @@ func main() {
   w.Header().Set("X-Content-Type-Options","nosniff")
   _=json.NewEncoder(w).Encode(ocr.Probe(r.Context()))
  })
+	mux.HandleFunc("GET /pdf-ocr-status",func(w http.ResponseWriter,r *http.Request){
+  if !auth(w,r){return}
+  w.Header().Set("Content-Type","application/json; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _=json.NewEncoder(w).Encode(ocr.PDFProbe(r.Context()))
+ })
 	mux.HandleFunc("POST /process", func(w http.ResponseWriter, r *http.Request) {
 		if !auth(w, r) {
 			return
@@ -115,6 +122,7 @@ func main() {
 			http.Error(w, localized(r,"Invalid or oversized upload","Tệp không hợp lệ hoặc quá lớn"), http.StatusBadRequest)
 			return
 		}
+		if r.MultipartForm != nil { defer r.MultipartForm.RemoveAll() }
 		uploads := r.MultipartForm.File["files"]
 		if len(uploads) == 0 || len(uploads) > engine.MaxFiles {
 			http.Error(w, localized(r,"Select 1–50 files","Chọn 1–50 tệp"), http.StatusBadRequest)
@@ -153,7 +161,11 @@ func main() {
 		}
 		var result engine.Result
         var e error
-        if op=="ocr-images"{
+        if op=="ocr-pdf"{
+           ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
+           defer cancel()
+           result,e=ocr.RunPDF(ctx,files,r.FormValue("ocr_lang"))
+        }else if op=="ocr-images"{
            ctx,cancel:=context.WithTimeout(r.Context(),3*time.Minute)
            defer cancel()
            result,e=ocr.RunImages(ctx,files,r.FormValue("ocr_lang"),r.FormValue("ocr_format"))
