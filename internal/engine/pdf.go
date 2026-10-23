@@ -58,7 +58,7 @@ func ParsePageSelection(spec string, pageCount int) ([]int, error) {
 func pageSpec(nums []int) []string {
  parts:=make([]string,len(nums))
  for i,n:=range nums{parts[i]=strconv.Itoa(n)}
- return []string{strings.Join(parts,",")}
+ return parts
 }
 func verifyPDF(ctx context.Context, data []byte, want int) error {
  got,e:=api.PageCount(ctx,bytes.NewReader(data),nil)
