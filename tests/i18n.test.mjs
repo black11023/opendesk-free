@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const html=fs.readFileSync('cmd/opendesk/web/index.html','utf8');
-const match=html.match(/const t=(\{.*?\});function render/s);
+const match=html.match(/const t=(\{.*?\});\s*function render/s);
 if(!match)throw new Error('UI translation dictionary missing');
 const translations=vm.runInNewContext('('+match[1]+')');
 test('English and Vietnamese include the same keys',()=>{

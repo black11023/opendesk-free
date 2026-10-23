@@ -32,7 +32,7 @@ After the first build, open the repository's **Actions > Build and test Windows 
 
 ## Compile from source
 
-Go >=1.25, pdfcpu v0.16.3 Apache-2.0 dependency (downloaded during build):
+Go >=1.26, pdfcpu v0.16.3 Apache-2.0 dependency (downloaded during build):
 
 ```powershell
 go test ./...

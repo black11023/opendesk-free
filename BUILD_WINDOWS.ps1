@@ -1,5 +1,5 @@
 # OpenDesk Free local Windows build script (PowerShell)
-# Prerequisite: Go 1.25+ installed and on PATH. No administrator privileges required.
+# Prerequisite: Go 1.26+ installed and on PATH. No administrator privileges required.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 New-Item -ItemType Directory -Path 'dist' -Force | Out-Null
