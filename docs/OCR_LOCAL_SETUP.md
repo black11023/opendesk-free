@@ -15,10 +15,21 @@ OpenDesk Free includes an **optional adapter** to Tesseract; the Tesseract engin
 - Tesseract works entirely on the user's PC. The app runs `tesseract stdin stdout -l eng` (plus `pdf` when a searchable PDF is requested); image bytes flow through local stdin. It does not invoke a shell, execute input filenames, upload content or download new binaries.
 - OCR scanned PNG/JPG only, max 10 images, 20 megapixels per image, 40 MB total. Text output combines all images with per-file headings; PDF output creates one searchable page per image.
 - Misrecognized or blank text is possible. Verify important facts, amounts, names and Vietnamese accents manually.
-- OCR of already existing scanned PDFs is **not implemented**. Convert PDF pages to images with a trusted tool first if necessary.
+- **New in V0.4 Preview 2:** OCR of an existing scanned PDF is supported only if a separate `ocrmypdf` executable is installed on PATH, along with Tesseract and its language data. OpenDesk's installer does **not** install OCRmyPDF, Python, Ghostscript or language packs.
+- PDF OCR uses `--skip-text`: pages already containing text are preserved, while scanned pages receive OCR where supported by OCRmyPDF. The input file is never overwritten.
+- One PDF per run, up to 100 pages and 40 MB input, 80 MB result limit. OCR can be imperfect; check names, numbers and Vietnamese diacritics. Encrypted/unsupported PDFs are rejected.
+- PDF processing uses a private OS temporary directory and deletes it after success or failure. No document data is uploaded or logged.
 - Windows installer is not code-signed and has not completed real end-user Windows install/uninstall testing.
 
 Upstream documentation:
 - https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
 - https://github.com/tesseract-ocr/tessdoc/blob/main/Installation.md
 - https://github.com/tesseract-ocr/tessdata_fast
+
+## OCRmyPDF Windows optional installation (for scanned PDFs)
+
+Official guide: https://ocrmypdf.readthedocs.io/en/latest/installation.html#windows . Native Windows installation requires a suitable OCRmyPDF version and dependencies, notably Tesseract and uv, plus Ghostscript for some conversions. Follow the upstream instructions carefully; some steps may require administrator privileges. Do **not** install from an untrusted download page.
+
+Verify in a new terminal: `ocrmypdf --version` and `tesseract --list-langs`. Both executables must be discoverable on PATH. Restart OpenDesk and select **OCR scanned PDF**; use the **Recheck OCRmyPDF + Tesseract** button. The status endpoint detects an executable, not a guarantee that all components are healthy. If processing fails, OpenDesk displays the upstream error without publishing an incorrect PDF.
+
+Linux/macOS users can use their supported package manager to install OCRmyPDF. Windows output is a newly generated searchable PDF, not a replacement of the original document.

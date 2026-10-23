@@ -42,3 +42,9 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Optional Tesseract installed-locally adapter, eng/vie status detection, image → TXT and searchable PDF, fail-closed for missing engine/language.
 - Tesseract executable + traineddata are **not bundled** in installer. A preinstalled Tesseract is required.
 - Scanned source-PDF OCR, multilingual accuracy benchmark, Windows end-user acceptance and single-click optional install are pending. Do not label OCR complete across all formats.
+
+### V0.4 Preview 2 — OCR scanned PDF
+
+- Optional external OCRmyPDF adapter discovered on PATH; requires separately installed Tesseract with selected traineddata and OCRmyPDF upstream dependencies.
+- Actual PDF input: preserve original, fail closed on malformed PDF, no shell, private temporary files removed, check page count of final result, limit pages/size/time.
+- Automated tests use an injected fake runner to verify arguments, rejection, output verification and temp cleanup; **this is not OCR recognition accuracy validation**. End-user PDF OCR requires live Windows acceptance with OCRmyPDF installed.

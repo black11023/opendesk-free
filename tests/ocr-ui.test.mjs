@@ -25,3 +25,14 @@ test('OCR is disabled when language pack or engine missing',()=>{
  assert.match(html,/function ocrReady\(\)/);
  assert.match(html,/state.ocrStatus=null/);
 });
+
+test('PDF OCR requires both local OCR engines with page limits and truthful UI',()=>{
+ assert.match(html,/data-op="ocr-pdf"/);
+ assert.match(html,/data-en="OCR scanned PDF"/);
+ assert.match(html,/data-vi="Nhận dạng chữ trong PDF scan"/);
+ assert.match(html,/fetch\('\/pdf-ocr-status'/);
+ assert.match(html,/state\.pdfOcrStatus\?\.installed/);
+ assert.match(html,/form\.append\('ocr_lang',state\.ocrLang\)/);
+ assert.match(backend,/GET \/pdf-ocr-status/);
+ assert.match(backend,/ocr\.RunPDF/);
+});

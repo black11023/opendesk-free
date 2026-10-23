@@ -4,7 +4,7 @@
 
 ![OpenDesk Free desktop preview](assets/desktop-preview.png)
 
-> **Status: v0.4.0-preview.1 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
+> **Status: v0.4.0-preview.2 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
 
 ## Features in v0.2 preview / Các chức năng hiện có
 
@@ -65,7 +65,7 @@ English is selected by default for new users. Switch to **Tiếng Việt** in th
 
 ## Public preview releases
 
-After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.4.0-preview.1** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
+After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.4.0-preview.2** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
 
 **Preview 2:** language cookie contains only `en` or `vi`. No document contents or account identifiers are stored in it.
 
@@ -73,7 +73,7 @@ After tests and Windows EXE builds succeed on `main`, the workflow creates the *
 
 For **Extract PDF pages**, enter `2`, `1,5,9`, `10-15`, or even `7,2,5`; the custom order is honored. Leave blank to select all pages (limited to 300 output pages). Download one combined PDF or individual PDFs inside a ZIP. For **Merge PDFs**, choose a page range for each file and use the arrows to change file order. Supported input: up to 5,000 pages/document under the existing 40 MB total upload limit; max 300 selected output pages; ZIP mode up to 100 pages. Page indexes start from **1** and out-of-bounds selection is rejected. Original source files are never overwritten.
 
-**v0.2 Preview 4:** Added per-PDF page selection and input order controls to the bilingual app. Download selected pages into one PDF or as separate PDF files in a ZIP. Build and regression tests must pass before public prerelease. [Latest preview](https://github.com/black11023/opendesk-free/releases/tag/v0.4.0-preview.1).
+**v0.2 Preview 4:** Added per-PDF page selection and input order controls to the bilingual app. Download selected pages into one PDF or as separate PDF files in a ZIP. Build and regression tests must pass before public prerelease. [Latest preview](https://github.com/black11023/opendesk-free/releases/tag/v0.4.0-preview.2).
 
 ## OpenDesk Tools Hub — 0.3 preview
 
@@ -88,3 +88,7 @@ The app can use a **separately installed** Tesseract OCR executable (Apache-2.0)
 Select up to 10 PNG/JPG image scans and choose English, Vietnamese or combined language mode. Download recognized UTF-8 TXT or a newly generated searchable PDF with a text layer. Each job runs on the local PC using standard input; document contents are not sent to OpenAI or third-party APIs. Input validation checks extension, actual format and dimensions (20 MP/image); file upload remains max 40 MB total.
 
 **Not yet available:** rasterizing scanned source PDF pages for OCR, automatic Tesseract installation, bundled traineddata, document-layout fidelity guarantees, OCR confidence/proofreading and full Windows end-user acceptance. Use [setup instructions](docs/OCR_LOCAL_SETUP.md).
+
+## Scanned PDF → searchable PDF (V0.4 Preview 2)
+
+The new **OCR scanned PDF** feature is an optional local adapter to OCRmyPDF, **not a built-in OCR engine**. It requires OCRmyPDF plus Tesseract language data installed separately; OpenDesk never downloads any extra executables or sends files to a server. One PDF at a time, up to 100 pages and 40 MB input. Existing text pages are skipped; resulting pages are counted and checked before download. The intermediate files are kept only in a private temporary directory and removed after completion. See [Windows setup guide](docs/OCR_LOCAL_SETUP.md). External OCR accuracy has not been certified on end-user machines.
