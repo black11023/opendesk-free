@@ -1,94 +1,60 @@
-# OpenDesk Free 🧰
+# OpenDesk Free — free, private tools for everyone 🧰
 
-**Free, offline-first document utilities for everyone. / Công cụ xử lý tài liệu miễn phí dành cho mọi người.**
+**English · Tiếng Việt** | **No subscription · No account · Offline-first**
 
-![OpenDesk Free desktop preview](assets/desktop-preview.png)
+![OpenDesk Free preview](assets/desktop-preview.png)
 
-> **Status: v0.4.0-preview.2 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
+[Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-## Features in v0.2 preview / Các chức năng hiện có
+> **v0.5.0-preview.1 — Windows 10/11 x64 preview.** Automated tests and builds run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
-- Organize uploaded documents into a ZIP with folders by type and SHA-256 manifest. No original file is changed.
-- CSV to Excel XLSX (one input CSV per worksheet; every imported cell is saved as text to preserve zeros and prevent formula execution).
-- DOCX to plain UTF-8 text (document body, without preserving formatting or images).
-- Detect byte-identical file duplicates by SHA-256 and download a CSV report.
-- Combine UTF-8 TXT/Markdown documents with file-name separators.
-- Vietnamese/English UI, local HTTP server limited to `127.0.0.1`, randomized port, per-session protection token, no telemetry, no paid API.
+OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
-**New in v0.2 preview:** English is the default language; a dropdown switches to Vietnamese and saves your preference locally. PDF merge, split to pages and rotate 90° clockwise are added using Apache-2.0-licensed pdfcpu. **Not yet supported:** OCR, searchable scanned PDFs, editing PDF text, Excel editing and workflow automation. This is not a stable release.
+## Features — truthful availability
 
-## System requirements
+| Feature | State | Details |
+|---|---|---|
+| PDF merge, select/split/reorder pages, rotate | **Built-in** | Choose page ranges |
+| PNG/JPG → PDF | **Built-in** | Max 25 images |
+| CSV → XLSX, DOCX → plain text | **Built-in** | Original files stay unchanged |
+| Organize ZIP, SHA-256 duplicate detection, text merge | **Built-in** | Download new results |
+| Image OCR → TXT/searchable PDF | **Optional local adapter** | Install Tesseract and language data |
+| Scan-PDF → searchable PDF | **Optional local adapter** | Install OCRmyPDF + Tesseract |
+| Word/Excel/PowerPoint → PDF | **Optional local adapter (V0.5)** | Install LibreOffice separately |
+| 44 free software links, 11 categories | **Directory only** | External projects, not integrated |
+| FFmpeg, workflow automation, more platforms | **Planned** | Not yet available |
 
-- Windows 10/11 64-bit for supplied EXEs (no Python, Docker or Node required).
-- A modern browser such as Edge, Chrome or Firefox.
-- Max 50 files and 40 MB total per operation for this preview.
-- Browser/PC access only. No file contents are transmitted to internet servers.
+### Install and use
 
-## Download
+1. Open [Releases](https://github.com/black11023/opendesk-free/releases). Download the newest `OpenDeskFree_Setup_*.exe` or the Portable EXE.
+2. Check `SHA256SUMS.txt`. These EXEs are unsigned; do not blindly bypass system security warnings.
+3. Launch OpenDesk, select English or Vietnamese, choose an operation and drop your files into the window.
+4. To enable **Office → PDF**, install [LibreOffice](https://www.libreoffice.org/) separately and follow [Office setup](docs/OFFICE_LOCAL_SETUP.md). To enable OCR use [OCR setup](docs/OCR_LOCAL_SETUP.md).
 
-After the first build, open the repository's **Actions > Build and test Windows installer** and download `OpenDeskFree-Windows-v0.1.0.zip` from run artifacts. Extract the ZIP and run `OpenDeskFree_Setup_0.1.0.exe` or use `OpenDeskFree_Portable_0.1.0.exe`. When published as a GitHub Release, the `.exe` files appear on its release page as assets.
+### Safety and limits
 
-**Unsigned binary:** Windows SmartScreen may warn about an unfamiliar publisher. We recommend validating checksums and building from source; never bypass security warnings blindly.
+Built-in operations work offline without registration. Optional adapters run installed third-party programs locally, never download binaries for you, and store data in a private temporary workspace cleaned after processing.
 
-## Compile from source
+- Typical maximum: 50 input files / 40 MB combined, with smaller limits per tool.
+- Office conversion: **1–8 files**, 40 MB input, 250 pages per generated PDF, 500 pages and 80 MB of combined output; 1 input → 1 PDF, multiple inputs → ZIP.
+- DOCX/Excel/PowerPoint rendering can change fonts, layout and pagination. Always inspect resulting PDFs before submitting important documents.
+- Local server binds only `127.0.0.1`, with per-session token and origin checks, no telemetry, no cloud storage. External tools are **not** a hardened sandbox: avoid untrusted documents.
 
-Go >=1.26, pdfcpu v0.16.3 Apache-2.0 dependency (downloaded during build):
+### Build and contribute
+
+Go 1.26+; first build needs the Go dependencies. Windows:
 
 ```powershell
+go mod tidy
 go test ./...
+go vet ./...
 go build -o OpenDeskFree_Portable.exe ./cmd/opendesk
 go build -ldflags "-H=windowsgui" -o cmd/setup/payload/OpenDeskFree.exe ./cmd/opendesk
 go build -ldflags "-H=windowsgui" -o OpenDeskFree_Setup.exe ./cmd/setup
 ```
 
-The installer sources are Windows-specific. On Linux, cross-compile using `GOOS=windows GOARCH=amd64 CGO_ENABLED=0` for both binaries.
+[Build workflow](.github/workflows/build-windows.yml) · [Contributing guidelines](CONTRIBUTING.md) · [Project roadmap](docs/ROADMAP.md) · [External integrations and licenses](docs/LICENSES_AND_INTEGRATIONS.md)
 
-## Privacy and security
+Community contributions, translations and test reports are welcome. Never attach personal documents to public issues. A successful GitHub Actions build does not prove third-party conversion accuracy on a user's PC.
 
-- Runs solely on loopback (`127.0.0.1`). Not available to the internet or other computers.
-- Most operations run in memory; PDF splitting may use a temporary local directory deleted after processing. There is no persistent document database or external upload.
-- POST operations require a secret token and Origin check.
-- No automated file deletion, renaming or modification of original uploads.
-- An operation may consume up to tens of megabytes of RAM and processing time depending on input.
-- Review files before using them in other applications. This preview is not a substitute for antivirus or document validation.
-
-## Contribute
-
-Please use Issues to report bugs, including Windows version, input format (do not include confidential documents), steps to reproduce, expected and actual result. See `CONTRIBUTING.md` and `docs/ROADMAP.md`.
-
-## License
-
-MIT. Copyright © 2026 OpenDesk Free contributors.
-
-### International users / Người dùng quốc tế
-English is selected by default for new users. Switch to **Tiếng Việt** in the Language dropdown. The selected language is stored in a small localhost browser cookie, shared across random local app ports in the same browser profile. No account required.
-
-## Public preview releases
-
-After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.4.0-preview.2** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
-
-**Preview 2:** language cookie contains only `en` or `vi`. No document contents or account identifiers are stored in it.
-
-### Select PDF pages / Chọn trang PDF
-
-For **Extract PDF pages**, enter `2`, `1,5,9`, `10-15`, or even `7,2,5`; the custom order is honored. Leave blank to select all pages (limited to 300 output pages). Download one combined PDF or individual PDFs inside a ZIP. For **Merge PDFs**, choose a page range for each file and use the arrows to change file order. Supported input: up to 5,000 pages/document under the existing 40 MB total upload limit; max 300 selected output pages; ZIP mode up to 100 pages. Page indexes start from **1** and out-of-bounds selection is rejected. Original source files are never overwritten.
-
-**v0.2 Preview 4:** Added per-PDF page selection and input order controls to the bilingual app. Download selected pages into one PDF or as separate PDF files in a ZIP. Build and regression tests must pass before public prerelease. [Latest preview](https://github.com/black11023/opendesk-free/releases/tag/v0.4.0-preview.2).
-
-## OpenDesk Tools Hub — 0.3 preview
-
-A professional local **tools hub** with search, category filters, English/Vietnamese labels and a curated catalog of 44 independent third-party free/open-source projects. The catalog is stored in the app, without telemetry or background downloads. **Catalog entries are links, not embedded tools or guaranteed integrations.** Upstream tools may need separate installation, resources and licensing review.
-
-**New working native feature:** PNG/JPG images to one PDF (one page per image) using existing pdfcpu library, max 25 images, 20 MP per image, 40 MB combined upload. Originals remain untouched. See [integration blueprint](docs/INTEGRATION_BLUEPRINT.md), [landscape](docs/SOFTWARE_LANDSCAPE_2026.md) and [legal checks](docs/LICENSES_AND_INTEGRATIONS.md).
-
-## V0.4 — Offline OCR (optional local Tesseract adapter)
-
-The app can use a **separately installed** Tesseract OCR executable (Apache-2.0). It is **not bundled** in the Setup EXE. OpenDesk detects whether the engine and the English (`eng`) and/or Vietnamese (`vie`) traineddata are installed; a missing engine or language pack is shown as an actionable BLOCKED status. No automatic downloads.
-
-Select up to 10 PNG/JPG image scans and choose English, Vietnamese or combined language mode. Download recognized UTF-8 TXT or a newly generated searchable PDF with a text layer. Each job runs on the local PC using standard input; document contents are not sent to OpenAI or third-party APIs. Input validation checks extension, actual format and dimensions (20 MP/image); file upload remains max 40 MB total.
-
-**Not yet available:** rasterizing scanned source PDF pages for OCR, automatic Tesseract installation, bundled traineddata, document-layout fidelity guarantees, OCR confidence/proofreading and full Windows end-user acceptance. Use [setup instructions](docs/OCR_LOCAL_SETUP.md).
-
-## Scanned PDF → searchable PDF (V0.4 Preview 2)
-
-The new **OCR scanned PDF** feature is an optional local adapter to OCRmyPDF, **not a built-in OCR engine**. It requires OCRmyPDF plus Tesseract language data installed separately; OpenDesk never downloads any extra executables or sends files to a server. One PDF at a time, up to 100 pages and 40 MB input. Existing text pages are skipped; resulting pages are counted and checked before download. The intermediate files are kept only in a private temporary directory and removed after completion. See [Windows setup guide](docs/OCR_LOCAL_SETUP.md). External OCR accuracy has not been certified on end-user machines.
+**License:** MIT for OpenDesk's original code. Independent tools retain their own licenses and trademarks.

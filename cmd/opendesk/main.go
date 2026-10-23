@@ -20,12 +20,13 @@ import (
 
 	"opendesk-free/internal/engine"
 	"opendesk-free/internal/ocr"
+ "opendesk-free/internal/office"
 )
 
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.4.0-preview.2"
+const Version = "0.5.0-preview.1"
 
 func main() {
 	secretBytes := make([]byte, 32)
@@ -113,6 +114,13 @@ func main() {
   w.Header().Set("X-Content-Type-Options","nosniff")
   _=json.NewEncoder(w).Encode(ocr.PDFProbe(r.Context()))
  })
+	mux.HandleFunc("GET /office-status",func(w http.ResponseWriter,r *http.Request){
+  if !auth(w,r){return}
+  w.Header().Set("Content-Type","application/json; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _=json.NewEncoder(w).Encode(office.Probe(r.Context()))
+ })
 	mux.HandleFunc("POST /process", func(w http.ResponseWriter, r *http.Request) {
 		if !auth(w, r) {
 			return
@@ -161,7 +169,11 @@ func main() {
 		}
 		var result engine.Result
         var e error
-        if op=="ocr-pdf"{
+        if op=="office-pdf"{
+          ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
+          defer cancel()
+          result,e=office.Run(ctx,files)
+        }else if op=="ocr-pdf"{
            ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
            defer cancel()
            result,e=ocr.RunPDF(ctx,files,r.FormValue("ocr_lang"))
