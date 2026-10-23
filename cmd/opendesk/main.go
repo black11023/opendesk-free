@@ -22,7 +22,7 @@ import (
 //go:embed web/index.html
 var web embed.FS
 
-const Version = "0.2.0-preview.1"
+const Version = "0.2.0-preview.2"
 
 func main() {
 	secretBytes := make([]byte, 32)

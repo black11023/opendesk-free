@@ -21,6 +21,8 @@ test('locale selector exists, English is the default, and selection is saved',()
  assert.match(html,/<option value="vi">Tiếng Việt<\/option>/);
  assert.match(html,/localStorage\.getItem\('opendesk-language'\)/);
  assert.match(html,/localStorage\.setItem\('opendesk-language'/);
+ assert.match(html,/document\.cookie/);
+ assert.match(html,/opendesk-free-language/);
  assert.match(html,/\?'vi':'en'/);
 });
 test('every inline operation label supplies both languages',()=>{

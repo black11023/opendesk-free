@@ -4,7 +4,7 @@
 
 ![OpenDesk Free desktop preview](assets/desktop-preview.png)
 
-> **Status: v0.2.0-preview.1 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
+> **Status: v0.2.0-preview.2 development preview.** The app builds for Windows; Windows runtime acceptance testing is still required before labeling it a stable release.
 
 ## Features in v0.2 preview / Các chức năng hiện có
 
@@ -61,8 +61,10 @@ Please use Issues to report bugs, including Windows version, input format (do no
 MIT. Copyright © 2026 OpenDesk Free contributors.
 
 ### International users / Người dùng quốc tế
-English is selected by default for new users. Switch to **Tiếng Việt** in the Language dropdown. Each browser saves its own preference on this PC. No account required.
+English is selected by default for new users. Switch to **Tiếng Việt** in the Language dropdown. The selected language is stored in a small localhost browser cookie, shared across random local app ports in the same browser profile. No account required.
 
 ## Public preview releases
 
-After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.2.0-preview.1** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
+After tests and Windows EXE builds succeed on `main`, the workflow creates the **v0.2.0-preview.2** public GitHub pre-release once. Subsequent development commits continue to produce Actions artifacts but do not silently replace the release; a future release requires a deliberate version bump. Executables are unsigned and desktop install/uninstall on an end-user Windows PC still needs final acceptance testing.
+
+**Preview 2:** language cookie contains only `en` or `vi`. No document contents or account identifiers are stored in it.
