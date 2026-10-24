@@ -38,7 +38,7 @@ jobs:
       - name: Vet Go source
         run: go vet ./...
       - name: Runtime smoke test for actual Windows Portable EXE
-        run: node --test tests/windows-runtime.test.mjs
+        run: node --test tests/windows-runtime.smoke.mjs
       - name: Build Windows setup executable
         shell: pwsh
         run: |
