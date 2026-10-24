@@ -65,3 +65,7 @@ Community contributions, translations and test reports are welcome. Never attach
 - Two document operations can run at the same time; additional calls receive HTTP 429 instead of accumulating unbounded jobs in memory.
 - Built-in PDF/image operations now receive the client request context, allowing cancellation to propagate where supported by pdfcpu.
 - Download filenames use standards-aware Unicode content disposition and client parsing. These improvements do not change the no-cloud architecture.
+
+### Stateless PDF engine
+
+OpenDesk disables pdfcpu's persistent configuration directory at process initialization. Document operations use pdfcpu's built-in default PDF configuration and no longer create or update a shared per-user `pdfcpu/config.yml`. This avoids first-run config write contention on Windows and does not touch existing pdfcpu settings. Custom user-installed PDF fonts/configuration from that directory are deliberately not used by these built-in operations.
