@@ -66,12 +66,12 @@ func verifyPDF(ctx context.Context, data []byte, want int) error {
  if got!=want{return fmt.Errorf("output pages %d != expected %d",got,want)}
  return nil
 }
-func pdfProcess(op string, files []Input, selection []string) (Result,error){
+func pdfProcess(parent context.Context,op string, files []Input, selection []string) (Result,error){
  if len(files)<1||len(files)>10{return Result{},errors.New("PDF operations accept 1–10 files")}
  if op=="pdf-merge"&&len(files)<2{return Result{},errors.New("merge requires two or more PDFs")}
  if op!="pdf-merge"&&len(files)!=1{return Result{},errors.New("select exactly one PDF")}
  if len(selection)!=0&&len(selection)!=len(files){return Result{},errors.New("page selections must match the number of files")}
- ctx,cancel:=context.WithTimeout(context.Background(),90*time.Second);defer cancel()
+ ctx,cancel:=context.WithTimeout(parent,90*time.Second);defer cancel()
  sets:=make([][]int,len(files))
  total:=0
  for i,f:=range files{

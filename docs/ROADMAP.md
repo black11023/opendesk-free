@@ -55,3 +55,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Verified output structure and page counts with strict resource limits; mock-converter unit tests cover errors and cleanup, not real-world layout fidelity.
 - Accessibility and English-first onboarding improved, README rewritten, transparent integrated/optional/external/planned statuses.
 - Next: real native Windows install/uninstall and LibreOffice fixture rendering, error tracing and stronger multilingual docs.
+
+### V0.5.1 Runtime verification
+
+- Build Windows GUI EXE then run it from CI on Windows (binds only 127.0.0.1), test /health, authorized local POST, denial of unauthenticated and cross-origin POST, then clean shutdown.
+- Cap concurrent document processing to 2 and return 429 for extra jobs; propagate HTTP cancellation into built-in PDF/image processing. Add unit/negative tests.
+- Check standards-compliant Unicode output filenames and client-side parsing.
+- Remaining: actual Windows installer install/upgrade/uninstall on a user machine; actual LibreOffice/OCRmyPDF rendering and visual UX review. Not STABLE.

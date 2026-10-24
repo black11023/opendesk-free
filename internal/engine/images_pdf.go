@@ -18,7 +18,7 @@ import (
 // imagesPDF builds one PDF page per image using the pre-existing pdfcpu dependency.
 // Each image is decoded for dimensions before passing to pdfcpu. No source file is
 // changed, no executable is downloaded, and no external API is contacted.
-func imagesPDF(files []Input) (Result, error) {
+func imagesPDF(parent context.Context,files []Input) (Result, error) {
  if len(files)==0||len(files)>25 {return Result{},errors.New("select 1–25 PNG/JPG images")}
  images:=make([]io.Reader,0,len(files))
  for _,f:=range files{
@@ -31,7 +31,7 @@ func imagesPDF(files []Input) (Result, error) {
   if cfg.Width<1||cfg.Height<1||int64(cfg.Width)*int64(cfg.Height)>20_000_000{return Result{},fmt.Errorf("image dimensions outside 20 MP limit: %s",SafeName(f.Name))}
   images=append(images,bytes.NewReader(f.Data))
  }
- ctx,cancel:=context.WithTimeout(context.Background(),90*time.Second)
+ ctx,cancel:=context.WithTimeout(parent,90*time.Second)
  defer cancel()
  var out bytes.Buffer
  if e:=api.ImportImages(ctx,nil,&out,images,api.DefaultImportConfig(),nil);e!=nil{return Result{},fmt.Errorf("image to PDF: %w",e)}
