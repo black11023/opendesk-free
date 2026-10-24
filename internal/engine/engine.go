@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto/sha256"
+ "context"
 	"encoding/csv"
 	"encoding/hex"
 	"encoding/xml"
@@ -54,6 +55,12 @@ func SafeName(s string) string {
 }
 
 func Run(op string, files []Input, pageSelections ...string) (Result, error) {
+ return RunContext(context.Background(),op,files,pageSelections...)
+}
+
+// RunContext allows the local HTTP request to cancel CPU-heavy PDF processing.
+func RunContext(ctx context.Context,op string, files []Input, pageSelections ...string) (Result, error) {
+ if e:=ctx.Err();e!=nil{return Result{},e}
 	if len(files) == 0 {
 		return Result{}, errors.New("Please select at least one file / Chọn ít nhất một tệp")
 	}
@@ -82,9 +89,9 @@ func Run(op string, files []Input, pageSelections ...string) (Result, error) {
 	case "join-text":
 		return joinText(files)
 	case "images-pdf":
-		return imagesPDF(files)
+		return imagesPDF(ctx,files)
 	case "pdf-merge", "pdf-split", "pdf-extract", "pdf-rotate":
-		return pdfProcess(op, files, pageSelections)
+		return pdfProcess(ctx,op, files, pageSelections)
 	default:
 		return Result{}, errors.New("unknown operation")
 	}

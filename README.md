@@ -6,7 +6,7 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.5.0-preview.1 — Windows 10/11 x64 preview.** Automated tests and builds run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.5.1-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -58,3 +58,10 @@ go build -ldflags "-H=windowsgui" -o OpenDeskFree_Setup.exe ./cmd/setup
 Community contributions, translations and test reports are welcome. Never attach personal documents to public issues. A successful GitHub Actions build does not prove third-party conversion accuracy on a user's PC.
 
 **License:** MIT for OpenDesk's original code. Independent tools retain their own licenses and trademarks.
+
+### Runtime and reliability hardening (V0.5.1)
+
+- The actual compiled Windows Portable EXE is now started in CI, with its browser launch disabled only for testing. CI probes the live local HTTP server and exercises an authorized file-processing request plus forbidden/malformed requests.
+- Two document operations can run at the same time; additional calls receive HTTP 429 instead of accumulating unbounded jobs in memory.
+- Built-in PDF/image operations now receive the client request context, allowing cancellation to propagate where supported by pdfcpu.
+- Download filenames use standards-aware Unicode content disposition and client parsing. These improvements do not change the no-cloud architecture.

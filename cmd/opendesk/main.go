@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"crypto/rand"
+ "flag"
 	"encoding/json"
 	"embed"
 	"encoding/hex"
 	"fmt"
 	"html"
 	"io"
+ "mime"
 	"log"
 	"net"
 	"net/http"
@@ -26,16 +28,20 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.5.0-preview.1"
+const Version = "0.5.1-preview.1"
 
 func main() {
+ port := flag.Int("port",0,"local-only listen port (0 chooses a random port)")
+ noBrowser := flag.Bool("no-browser",false,"do not open the default browser")
+ flag.Parse()
+ if *port<0 || *port>65535 { critical(fmt.Errorf("invalid local port %d",*port));return }
 	secretBytes := make([]byte, 32)
 	if _, err := rand.Read(secretBytes); err != nil {
 		critical(err)
 		return
 	}
 	token := hex.EncodeToString(secretBytes)
-	ln, err := net.Listen("tcp4", "127.0.0.1:0")
+	ln, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d",*port))
 	if err != nil {
 		critical(err)
 		return
@@ -100,6 +106,7 @@ func main() {
 		return true
 	}
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
+ processGate := newProcessGate(2)
 	mux.HandleFunc("GET /ocr-status",func(w http.ResponseWriter,r *http.Request){
   if !auth(w,r){return}
   w.Header().Set("Content-Type","application/json; charset=utf-8")
@@ -125,6 +132,12 @@ func main() {
 		if !auth(w, r) {
 			return
 		}
+        if !processGate.TryEnter(){
+          w.Header().Set("Retry-After","2")
+          http.Error(w,localized(r,"OpenDesk is busy with other jobs. Try again shortly.","OpenDesk đang xử lý tác vụ khác. Vui lòng thử lại sau."),http.StatusTooManyRequests)
+          return
+        }
+        defer processGate.Leave()
 		r.Body = http.MaxBytesReader(w, r.Body, engine.MaxBytes+(3<<20))
 		if err := r.ParseMultipartForm(engine.MaxBytes + (1 << 20)); err != nil {
 			http.Error(w, localized(r,"Invalid or oversized upload","Tệp không hợp lệ hoặc quá lớn"), http.StatusBadRequest)
@@ -182,14 +195,14 @@ func main() {
            defer cancel()
            result,e=ocr.RunImages(ctx,files,r.FormValue("ocr_lang"),r.FormValue("ocr_format"))
         }else{
-           result,e=engine.Run(op, files, pageSelections...)
+           result,e=engine.RunContext(r.Context(),op, files, pageSelections...)
         }
 		if e != nil {
 			http.Error(w, localized(r,"Processing failed: "+e.Error(),"Xử lý thất bại: "+e.Error()), http.StatusUnprocessableEntity)
 			return
 		}
 		w.Header().Set("Content-Type", result.ContentType)
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename":result.Filename}))
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		_, _ = w.Write(result.Data)
@@ -204,7 +217,7 @@ func main() {
 	})
 	url := "http://" + ln.Addr().String()
 	log.Printf("OpenDesk Free v%s | local only: %s", Version, url)
-	go func() { time.Sleep(350 * time.Millisecond); _ = openBrowser(url) }()
+	if !*noBrowser { go func() { time.Sleep(350 * time.Millisecond); _ = openBrowser(url) }() }
 	if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 		critical(err)
 	}
