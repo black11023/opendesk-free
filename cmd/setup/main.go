@@ -135,6 +135,9 @@ func runPowershell(script string) error {
 }
 func createShortcut(app string) error {
 	link := shortcutPath()
+    // A newly created Windows user profile (and CI test profiles) may not
+    // contain the Start Menu programs directory yet.
+    if err:=os.MkdirAll(filepath.Dir(link),0755);err!=nil{return fmt.Errorf("create Start Menu directory: %w",err)}
 	script := `$ws=New-Object -ComObject WScript.Shell; $link=$ws.CreateShortcut(` + quotePS(link) + `); $link.TargetPath=` + quotePS(app) + `; $link.WorkingDirectory=` + quotePS(filepath.Dir(app)) + `; $link.Description='OpenDesk Free local-first workbench'; $link.Save()`
 	return runPowershell(script)
 }
