@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+ "runtime/debug"
 	"strings"
 	"time"
 
@@ -28,9 +29,11 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.5.2-preview.1"
+const Version = "0.6.0-preview.1"
 
 func main() {
+ // This is a soft Go heap budget, not a cap on external application processes.
+ debug.SetMemoryLimit(512 << 20)
  port := flag.Int("port",0,"local-only listen port (0 chooses a random port)")
  noBrowser := flag.Bool("no-browser",false,"do not open the default browser")
  flag.Parse()
@@ -138,6 +141,13 @@ func main() {
           return
         }
         defer processGate.Leave()
+        var mem runtime.MemStats
+        runtime.ReadMemStats(&mem)
+        if mem.HeapAlloc>300<<20{
+          w.Header().Set("Retry-After","5")
+          http.Error(w,localized(r,"Memory usage is high; try again later.","Bộ nhớ đang cao; vui lòng thử lại sau."),http.StatusServiceUnavailable)
+          return
+        }
 		r.Body = http.MaxBytesReader(w, r.Body, engine.MaxBytes+(3<<20))
 		if err := r.ParseMultipartForm(engine.MaxBytes + (1 << 20)); err != nil {
 			http.Error(w, localized(r,"Invalid or oversized upload","Tệp không hợp lệ hoặc quá lớn"), http.StatusBadRequest)
