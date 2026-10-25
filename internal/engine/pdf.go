@@ -68,7 +68,7 @@ func verifyPDF(ctx context.Context, data []byte, want int) error {
 }
 func pdfProcess(parent context.Context,op string, files []Input, selection []string) (Result,error){
  if len(files)<1||len(files)>10{return Result{},errors.New("PDF operations accept 1–10 files")}
- if op=="pdf-rotate"&&len(files)>1{return batchRotatePDF(ctx,files)}
+ if op=="pdf-rotate"&&len(files)>1{return batchRotatePDF(parent,files)}
  if op=="pdf-merge"&&len(files)<2{return Result{},errors.New("merge requires two or more PDFs")}
  if op!="pdf-merge"&&len(files)!=1{return Result{},errors.New("select exactly one PDF")}
  if len(selection)!=0&&len(selection)!=len(files){return Result{},errors.New("page selections must match the number of files")}
