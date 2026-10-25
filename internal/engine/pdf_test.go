@@ -51,7 +51,7 @@ func TestPDFRejectsWrongFilesAndCounts(t *testing.T){
  valid:=twoPageFixture(t)
  cases:=[]struct{op string;files []Input}{
   {"pdf-merge",[]Input{valid}},
-  {"pdf-rotate",[]Input{valid,valid}},
+  {"pdf-extract",[]Input{valid,valid}},
   {"pdf-split",[]Input{{Name:"not-pdf.txt",Data:valid.Data}}},
   {"pdf-rotate",[]Input{{Name:"fake.pdf",Data:[]byte("%PDF-corrupt")}}},
  }
