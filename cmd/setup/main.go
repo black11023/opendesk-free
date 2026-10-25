@@ -19,7 +19,7 @@ import (
 //go:embed payload/OpenDeskFree.exe
 var payload embed.FS
 
-const version = "0.5.1-preview.1"
+const version = "0.5.2-preview.1"
 
 var user32 = syscall.NewLazyDLL("user32.dll")
 var msgBox = user32.NewProc("MessageBoxW")
@@ -36,23 +36,27 @@ const mbInformation = 0x40
 const mbWarning = 0x30
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "/uninstall" {
-		uninstall()
-		return
-	}
-	if dialog("OpenDesk Free Setup", "Install OpenDesk Free v"+version+" for the current Windows user?\n\n100% offline. No administrator access needed.\n\nFiles will be installed in your Local AppData folder.\n\nDo you want to continue?", mbYesNo|mbInformation) != 6 {
-		return
-	}
-	if err := install(); err != nil {
-		dialog("Installation failed", err.Error(), mbWarning)
-		return
-	}
-	if dialog("OpenDesk Free installed", "Installation complete.\n\nStart Menu → OpenDesk Free\n\nLaunch OpenDesk Free now?", mbYesNo|mbInformation) == 6 {
-		root, e := installDir()
-		if e == nil {
-			_ = exec.Command(filepath.Join(root, "OpenDeskFree.exe")).Start()
-		}
-	}
+ // Explicit unattended modes are useful for automated installation tests.
+ // They never request elevation, never choose a custom installation path,
+ // and remain scoped to the current Windows user's Local AppData.
+ if len(os.Args)>1 {
+   switch os.Args[1] {
+   case "--quiet-install":
+     if err:=install();err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)}
+     return
+   case "--quiet-uninstall":
+     if err:=uninstall(true);err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)}
+     return
+   case "/uninstall":
+     if err:=uninstall(false);err!=nil{dialog("Uninstall failed",err.Error(),mbWarning)}
+     return
+   }
+ }
+ if dialog("OpenDesk Free Setup","Install OpenDesk Free v"+version+" for the current Windows user?\n\nNo administrator access needed.\n\nFiles will be installed in your Local AppData folder.\n\nDo you want to continue?",mbYesNo|mbInformation)!=6{return}
+ if err:=install();err!=nil{dialog("Installation failed",err.Error(),mbWarning);return}
+ if dialog("OpenDesk Free installed","Installation complete.\n\nStart Menu → OpenDesk Free\n\nLaunch OpenDesk Free now?",mbYesNo|mbInformation)==6{
+  if root,e:=installDir();e==nil{_ =exec.Command(filepath.Join(root,"OpenDeskFree.exe")).Start()}
+ }
 }
 func installDir() (string, error) {
 	p := os.Getenv("LOCALAPPDATA")
@@ -66,6 +70,7 @@ func install() error {
 	if err != nil {
 		return err
 	}
+    if os.Getenv("APPDATA")==""{return errors.New("APPDATA is not defined")}
 	if err = os.MkdirAll(root, 0755); err != nil {
 		return err
 	}
@@ -133,34 +138,29 @@ func createShortcut(app string) error {
 	script := `$ws=New-Object -ComObject WScript.Shell; $link=$ws.CreateShortcut(` + quotePS(link) + `); $link.TargetPath=` + quotePS(app) + `; $link.WorkingDirectory=` + quotePS(filepath.Dir(app)) + `; $link.Description='OpenDesk Free local-first workbench'; $link.Save()`
 	return runPowershell(script)
 }
-func uninstall() {
-	if dialog("Uninstall OpenDesk Free", "Remove OpenDesk Free from this PC?\n\nThis deletes only the application's installed files and Start Menu shortcut.\nDownloaded output files are kept.", mbYesNo|mbWarning) != 6 {
-		return
-	}
-	root, err := installDir()
-	if err != nil {
-		dialog("Uninstall failed", err.Error(), mbWarning)
-		return
-	}
-	app := filepath.Join(root, "OpenDeskFree.exe")
-	if err = os.Remove(app); err != nil && !os.IsNotExist(err) {
-		dialog("Close OpenDesk Free first", "Please close OpenDesk Free and run Uninstall again.\n\n"+err.Error(), mbWarning)
-		return
-	}
-	_ = os.Remove(shortcutPath())
-	key := `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenDeskFree`
-	_ = exec.Command("reg.exe", "delete", key, "/f").Run()
-	self, err := os.Executable()
-	if err == nil {
-		// The uninstaller is running; after exit, remove its own binary and empty app directory.
-		script := `Start-Sleep -Seconds 2; Remove-Item -LiteralPath ` + quotePS(self) + ` -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath ` + quotePS(root) + ` -ErrorAction SilentlyContinue`
-		code := utf16.Encode([]rune(script))
-		raw := make([]byte, len(code)*2)
-		for i, r := range code {
-			raw[i*2] = byte(r)
-			raw[i*2+1] = byte(r >> 8)
-		}
-		_ = exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-EncodedCommand", base64.StdEncoding.EncodeToString(raw)).Start()
-	}
-	dialog("OpenDesk Free", "Uninstalled. Your output documents were not changed.", mbInformation)
+// uninstall removes only OpenDesk-owned executables, shortcut and the
+// per-user registry entry. It never recursively deletes an installation
+// directory, so user-created files in that folder are retained.
+func uninstall(quiet bool) error {
+ if !quiet&&dialog("Uninstall OpenDesk Free","Remove OpenDesk Free from this PC?\n\nThis deletes only installed application files and its Start Menu shortcut.\nDownloaded documents are kept.",mbYesNo|mbWarning)!=6{return nil}
+ root,err:=installDir();if err!=nil{return err}
+ if os.Getenv("APPDATA")==""{return errors.New("APPDATA is not defined")}
+ app:=filepath.Join(root,"OpenDeskFree.exe")
+ if err=os.Remove(app);err!=nil&&!os.IsNotExist(err){return fmt.Errorf("close OpenDesk Free before uninstalling: %w",err)}
+ if err=os.Remove(shortcutPath());err!=nil&&!os.IsNotExist(err){return fmt.Errorf("remove Start Menu shortcut: %w",err)}
+ key:=`HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenDeskFree`
+ if err=exec.Command("reg.exe","delete",key,"/f").Run();err!=nil{
+   // Repeating an uninstall with no registry key should be idempotent.
+   if out,qerr:=exec.Command("reg.exe","query",key).CombinedOutput();qerr==nil{return fmt.Errorf("registry removal failed: %w",err)}else{_ =out}
+ }
+ self,err:=os.Executable()
+ if err==nil {
+   script:=`Start-Sleep -Seconds 2; Remove-Item -LiteralPath `+quotePS(self)+` -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath `+quotePS(root)+` -ErrorAction SilentlyContinue`
+   code:=utf16.Encode([]rune(script))
+   raw:=make([]byte,len(code)*2)
+   for i,v:=range code{raw[i*2]=byte(v);raw[i*2+1]=byte(v>>8)}
+   if err=exec.Command("powershell.exe","-NoProfile","-NonInteractive","-WindowStyle","Hidden","-ExecutionPolicy","Bypass","-EncodedCommand",base64.StdEncoding.EncodeToString(raw)).Start();err!=nil{return fmt.Errorf("schedule uninstaller cleanup: %w",err)}
+ }
+ if !quiet{dialog("OpenDesk Free","Uninstalled. Output documents were not changed.",mbInformation)}
+ return nil
 }

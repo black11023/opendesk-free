@@ -6,7 +6,7 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.5.1-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.5.2-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -69,3 +69,9 @@ Community contributions, translations and test reports are welcome. Never attach
 ### Stateless PDF engine
 
 OpenDesk disables pdfcpu's persistent configuration directory at process initialization. Document operations use pdfcpu's built-in default PDF configuration and no longer create or update a shared per-user `pdfcpu/config.yml`. This avoids first-run config write contention on Windows and does not touch existing pdfcpu settings. Custom user-installed PDF fonts/configuration from that directory are deliberately not used by these built-in operations.
+
+### Windows installer acceptance (v0.5.2)
+
+GitHub Actions now launches the actual unsigned Windows Setup EXE in an **isolated temporary per-user profile directory**. It verifies install and Installed Apps registry entry, reruns Setup as an upgrade, launches the installed desktop process on localhost, uninstalls, and confirms that user-created files survive. This is stronger than compilation alone, but it does **not** replace acceptance testing on real Windows 10/11 PCs, malware scanning, signed releases or end-user GUI-dialog verification.
+
+Automation supports explicit `--quiet-install` and `--quiet-uninstall` switches. They operate only within the current user's default Local AppData installation path and never request elevation. Ordinary interactive Setup/Uninstall prompts remain available.
