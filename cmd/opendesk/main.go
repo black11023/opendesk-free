@@ -28,7 +28,7 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.5.1-preview.1"
+const Version = "0.5.2-preview.1"
 
 func main() {
  port := flag.Int("port",0,"local-only listen port (0 chooses a random port)")

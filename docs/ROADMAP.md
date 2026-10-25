@@ -62,3 +62,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Cap concurrent document processing to 2 and return 429 for extra jobs; propagate HTTP cancellation into built-in PDF/image processing. Add unit/negative tests.
 - Check standards-compliant Unicode output filenames and client-side parsing.
 - Remaining: actual Windows installer install/upgrade/uninstall on a user machine; actual LibreOffice/OCRmyPDF rendering and visual UX review. Not STABLE.
+
+### v0.5.2 Windows installer acceptance
+
+- GitHub-hosted Windows smoke: run actual Setup EXE quiet installation and upgrade using isolated LOCALAPPDATA/APPDATA; assert files, shortcut and HKCU Uninstall registration.
+- Launch installed EXE and request local health/quit; quiet uninstall; confirm registry/shortcut/executable removal and preservation of independent downloads and user-created files.
+- Failure of any assertion blocks Release. Installer does not recursively delete the installation directory.
+- Remaining gate for Stable: user-visible dialog acceptance and Windows 10/11 real-machine installation/upgrades, security and antivirus reputation review, and verification of optional external engines.
