@@ -68,6 +68,7 @@ func verifyPDF(ctx context.Context, data []byte, want int) error {
 }
 func pdfProcess(parent context.Context,op string, files []Input, selection []string) (Result,error){
  if len(files)<1||len(files)>10{return Result{},errors.New("PDF operations accept 1–10 files")}
+ if op=="pdf-rotate"&&len(files)>1{return batchRotatePDF(ctx,files)}
  if op=="pdf-merge"&&len(files)<2{return Result{},errors.New("merge requires two or more PDFs")}
  if op!="pdf-merge"&&len(files)!=1{return Result{},errors.New("select exactly one PDF")}
  if len(selection)!=0&&len(selection)!=len(files){return Result{},errors.New("page selections must match the number of files")}
@@ -144,5 +145,29 @@ func pdfProcess(parent context.Context,op string, files []Input, selection []str
   return Result{Filename:"OpenDesk_Rotated.pdf",ContentType:"application/pdf",Data:out.Bytes()},nil
  }
  return Result{},errors.New("unknown PDF operation")
+}
+// Batch rotate produces a ZIP with numbered entries and verified page counts.
+func batchRotatePDF(ctx context.Context,files []Input)(Result,error){
+ if len(files)<2||len(files)>10{return Result{},errors.New("select 2–10 PDFs for batch rotation")}
+ outputs:=make(map[string][]byte,len(files))
+ totalPages,totalBytes:=0,0
+ for i,f:=range files{
+  if e:=ctx.Err();e!=nil{return Result{},e}
+  if !strings.EqualFold(fileExt(f.Name),".pdf")||!bytes.HasPrefix(f.Data,[]byte("%PDF-")){return Result{},fmt.Errorf("invalid PDF: %s",SafeName(f.Name))}
+  n,e:=api.PageCount(ctx,bytes.NewReader(f.Data),nil)
+  if e!=nil||n<1{return Result{},fmt.Errorf("cannot read PDF: %s",SafeName(f.Name))}
+  totalPages+=n
+  if totalPages>300{return Result{},errors.New("batch rotate supports at most 300 pages")}
+  rotated,e:=pdfProcess(ctx,"pdf-rotate",[]Input{f},nil)
+  if e!=nil{return Result{},fmt.Errorf("rotate %s: %w",SafeName(f.Name),e)}
+  totalBytes+=len(rotated.Data)
+  if totalBytes>80<<20{return Result{},errors.New("batch PDF results exceed 80 MB")}
+  label:=strings.TrimSuffix(SafeName(f.Name),fileExt(f.Name))
+  outputs[fmt.Sprintf("%02d_%s_rotated.pdf",i+1,label)]=rotated.Data
+ }
+ output,e:=zipFiles("OpenDesk_Rotated_PDFs.zip",outputs)
+ if e!=nil{return Result{},e}
+ if len(output.Data)>80<<20{return Result{},errors.New("batch PDF ZIP exceeds 80 MB")}
+ return output,nil
 }
 func fileExt(name string)string{p:=strings.LastIndex(name,".");if p<0{return ""};return name[p:]}
