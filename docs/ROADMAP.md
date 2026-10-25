@@ -69,3 +69,11 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Launch installed EXE and request local health/quit; quiet uninstall; confirm registry/shortcut/executable removal and preservation of independent downloads and user-created files.
 - Failure of any assertion blocks Release. Installer does not recursively delete the installation directory.
 - Remaining gate for Stable: user-visible dialog acceptance and Windows 10/11 real-machine installation/upgrades, security and antivirus reputation review, and verification of optional external engines.
+
+### V0.6 Preview — professional workspace, real document tests, memory
+
+- Bilingual searchable built-in tools and responsive category filters; progress/busy state and keyboard accessibility.
+- Batch rotate up to 10 PDFs into a single ZIP, with maximum 300 total pages and 80 MB output. Reject corrupt documents.
+- Soft Go heap budget 512 MiB and reject memory-intensive requests if Go HeapAlloc exceeds 300 MiB; still requires real high-volume profiling and external-tool memory controls.
+- Linux real LibreOffice DOCX/XLSX-to-PDF content checks and Tesseract/OCRmyPDF text extraction from actual generated scanned images. These are real dependency tests, not mocks.
+- Windows EXE and Setup install-upgrade-uninstall CI retained. Platform behavior remains Preview until real end-user installations and rendering reviews.
