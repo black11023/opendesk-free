@@ -24,6 +24,8 @@ jobs:
           command -v tesseract
           command -v ocrmypdf
           tesseract --list-langs
+      - name: Resolve Go module checksums for real converter tests
+        run: go mod tidy
       - name: Generate real reproducible DOCX, XLSX and scanned PNG fixtures
         run: python3 tests/generate_real_fixtures.py
       - name: Integration tests using real LibreOffice, Tesseract and OCRmyPDF
