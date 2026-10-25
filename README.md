@@ -75,3 +75,7 @@ OpenDesk disables pdfcpu's persistent configuration directory at process initial
 GitHub Actions now launches the actual unsigned Windows Setup EXE in an **isolated temporary per-user profile directory**. It verifies install and Installed Apps registry entry, reruns Setup as an upgrade, launches the installed desktop process on localhost, uninstalls, and confirms that user-created files survive. This is stronger than compilation alone, but it does **not** replace acceptance testing on real Windows 10/11 PCs, malware scanning, signed releases or end-user GUI-dialog verification.
 
 Automation supports explicit `--quiet-install` and `--quiet-uninstall` switches. They operate only within the current user's default Local AppData installation path and never request elevation. Ordinary interactive Setup/Uninstall prompts remain available.
+
+### Real document integration gates (V0.6)
+
+A second Linux GitHub Actions job now installs **real LibreOffice, Tesseract (English and Vietnamese traineddata), OCRmyPDF and pdftotext**. It generates tiny reproducible DOCX, XLSX and scanned PNG documents and asserts the text contents of rendered PDFs and OCR output. Unlike earlier injected mock tests, these calls invoke the real local third-party engines. Windows installation acceptance remains in a separate CI job; conversion layout fidelity on an end-user Windows PC is still unverified. View [.github/workflows/real-document-integration.yml](.github/workflows/real-document-integration.yml).

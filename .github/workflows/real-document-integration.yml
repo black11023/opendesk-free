@@ -1,0 +1,30 @@
+name: Real Office and OCR document integration
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-documents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Install actual offline OCR and Office engines
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc tesseract-ocr tesseract-ocr-eng tesseract-ocr-vie ocrmypdf ghostscript poppler-utils python3-pil fonts-dejavu-core
+          command -v soffice
+          command -v tesseract
+          command -v ocrmypdf
+          tesseract --list-langs
+      - name: Generate real reproducible DOCX, XLSX and scanned PNG fixtures
+        run: python3 tests/generate_real_fixtures.py
+      - name: Integration tests using real LibreOffice, Tesseract and OCRmyPDF
+        run: go test -tags=integration -count=1 -v ./internal/integration
