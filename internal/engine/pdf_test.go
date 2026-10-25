@@ -1,6 +1,7 @@
 package engine
 
 import (
+ "fmt"
   "archive/zip"
   "bytes"
   "context"
@@ -122,4 +123,25 @@ func TestPDFSourcePageContentAndMergeOrder(t *testing.T){
  if len(mergedContents)!=2||!strings.Contains(mergedContents[0],"test page 2")||!strings.Contains(mergedContents[1],"test page 1"){
    t.Fatalf("merge did not preserve selected page order: %q",mergedContents)
  }
+}
+
+func TestRotatePDFBatchIntegrity(t *testing.T){
+ original:=twoPageFixture(t)
+ first:=original;first.Name="contract.pdf"
+ second:=original;second.Name="contract.pdf"
+ result,e:=Run("pdf-rotate",[]Input{first,second});if e!=nil{t.Fatal(e)}
+ if result.ContentType!="application/zip"{t.Fatal(result.ContentType)}
+ arc,e:=zip.NewReader(bytes.NewReader(result.Data),int64(len(result.Data)));if e!=nil{t.Fatal(e)}
+ if len(arc.File)!=2{t.Fatalf("got %d files",len(arc.File))}
+ for i,f:=range arc.File {
+  if !strings.HasPrefix(f.Name,fmt.Sprintf("%02d_",i+1))||!strings.HasSuffix(f.Name,"_rotated.pdf"){t.Fatal(f.Name)}
+  rc,e:=f.Open();if e!=nil{t.Fatal(e)}
+  b,e:=io.ReadAll(rc);_ =rc.Close();if e!=nil{t.Fatal(e)}
+  checkPages(t,b,2)
+ }
+}
+func TestBatchRotateRejectsBadPDF(t *testing.T){
+ good:=twoPageFixture(t)
+ bad:=Input{Name:"invalid.pdf",Data:[]byte("%PDF-fake")}
+ if _,e:=Run("pdf-rotate",[]Input{good,bad});e==nil{t.Fatal("accepted corrupt source")}
 }
