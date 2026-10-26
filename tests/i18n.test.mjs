@@ -60,3 +60,10 @@ test('professional tool search, categories and batch-PDF interface are wired',()
  assert.match(html,/state\.processing/);
  assert.match(html,/aria-busy/);
 });
+
+test('read-only PDF batch audit is labeled in both languages and permits multiple sources',()=>{
+ assert.match(html,/data-op="pdf-audit"/);
+ assert.match(html,/data-en="Audit PDF files → CSV"/);
+ assert.match(html,/data-vi="Kiểm tra PDF hàng loạt → CSV"/);
+ assert.match(html,/state\.op!=='pdf-audit'/);
+});

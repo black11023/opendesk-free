@@ -84,3 +84,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Real two-slide PPTX rendering in LibreOffice with strict slide count and extracted text checks; three-format DOCX/XLSX/PPTX batch acceptance.
 - Repeated batch PDF memory regression test (retained Go heap after GC); reject combined upload size before all files are buffered.
 - Still missing: real Windows interactive visual walkthrough, complicated fonts/charts/animations, low-memory-PC and large-file benchmarking, external OCR/Office subprocess RSS enforcement.
+
+### V0.6.2 Preview — read-only PDF batch audits
+
+- Per-file CSV evidence for up to 50 inputs / 40 MB combined: source index, safe filename, PASS/FAIL, page count, original bytes, SHA-256, explanation for invalid structures. No source is altered.
+- Security: protect CSV output against spreadsheet-formula injection; retain UTF-8 BOM for Excel and exact input order.
+- Go negative unit tests and real Chromium download test are release gates, in addition to Windows Setup and real Office/OCR integration.
+- Not a virus scan, legal authenticity audit or certification of an entire PDF's visible content.

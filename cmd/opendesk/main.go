@@ -29,7 +29,7 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.6.1-preview.1"
+const Version = "0.6.2-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.

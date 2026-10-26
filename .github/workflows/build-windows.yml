@@ -32,7 +32,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           go build -trimpath -ldflags '-s -w -H=windowsgui' -o cmd/setup/payload/OpenDeskFree.exe ./cmd/opendesk
-          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.6.1_preview1.exe
+          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.6.2_preview1.exe
       - name: Run automated tests
         run: go test ./...
       - name: Vet Go source
@@ -42,7 +42,7 @@ jobs:
       - name: Build Windows setup executable
         shell: pwsh
         run: |
-          go build -trimpath -ldflags '-s -w -H=windowsgui' -o dist/OpenDeskFree_Setup_0.6.1_preview1.exe ./cmd/setup
+          go build -trimpath -ldflags '-s -w -H=windowsgui' -o dist/OpenDeskFree_Setup_0.6.2_preview1.exe ./cmd/setup
           Copy-Item go.sum dist/go.sum -Force
           Get-FileHash dist/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $(Split-Path -Leaf $_.Path)" } | Out-File dist/SHA256SUMS.txt -Encoding utf8
       - name: Windows Setup installation/upgrade/uninstall acceptance
@@ -50,7 +50,7 @@ jobs:
       - name: Upload installer build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: OpenDeskFree-Windows-v0.6.1_preview1
+          name: OpenDeskFree-Windows-v0.6.2_preview1
           path: dist/*
           if-no-files-found: error
           retention-days: 30
@@ -67,7 +67,7 @@ jobs:
             Write-Host 'Skipping release from superseded commit'
             exit 0
           }
-          $tag = 'v0.6.1-preview.1'
+          $tag = 'v0.6.2-preview.1'
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Preview release already exists. No replacement without version bump."
@@ -75,5 +75,5 @@ jobs:
           }
           $files = @(Get-ChildItem dist -File -Filter '*.exe' | ForEach-Object { $_.FullName })
           $files += (Resolve-Path dist/SHA256SUMS.txt).Path
-          gh release create $tag @files --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'OpenDesk Free v0.6.1 Preview 1' --notes-file 'docs/RELEASE_NOTES_V0.6.1_PREVIEW1.md' --prerelease
+          gh release create $tag @files --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'OpenDesk Free v0.6.2 Preview 1' --notes-file 'docs/RELEASE_NOTES_V0.6.2_PREVIEW1.md' --prerelease
           if ($LASTEXITCODE -ne 0) { throw 'GitHub preview release publish failed' }

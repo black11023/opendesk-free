@@ -70,7 +70,7 @@ func RunContext(ctx context.Context,op string, files []Input, pageSelections ...
 	var total int64
 	for _, f := range files {
 		total += int64(len(f.Data))
-		if len(f.Data) == 0 {
+		if len(f.Data) == 0 && op!="pdf-audit" {
 			return Result{}, fmt.Errorf("empty file: %s", SafeName(f.Name))
 		}
 	}
@@ -90,6 +90,8 @@ func RunContext(ctx context.Context,op string, files []Input, pageSelections ...
 		return joinText(files)
 	case "images-pdf":
 		return imagesPDF(ctx,files)
+	case "pdf-audit":
+        return pdfAudit(ctx,files)
 	case "pdf-merge", "pdf-split", "pdf-extract", "pdf-rotate":
 		return pdfProcess(ctx,op, files, pageSelections)
 	default:

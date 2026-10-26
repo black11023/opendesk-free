@@ -89,6 +89,18 @@ try{
  assert.equal(batch.suggestedFilename(),'OpenDesk_Rotated_PDFs.zip');
  const zipped=await readFile(await batch.path());
  assert.equal(zipped.subarray(0,2).toString(),'PK','batch result not ZIP');
+ await page.locator('.operation[data-op="pdf-audit"]').click();
+ await page.locator('#files').setInputFiles([
+  {name:'valid.pdf',mimeType:'application/pdf',buffer:source},
+  {name:'bad.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-not-a-valid-document')}
+ ]);
+ const auditEvent=page.waitForEvent('download',{timeout:45000});
+ await page.locator('#process').click();
+ const auditDownload=await auditEvent;
+ assert.equal(auditDownload.suggestedFilename(),'OpenDesk_PDF_Batch_Audit.csv');
+ const auditContent=(await readFile(await auditDownload.path())).toString('utf8');
+ assert.match(auditContent,/valid\.pdf,PASS,2/);
+ assert.match(auditContent,/bad\.pdf,FAIL,0/);
  assert.deepEqual(errors,[],'browser console script errors');
  const rss=await rssMiB(app.pid);
  const report={browser:'Chromium Linux',pdfTestBytes:source.length,batchZipBytes:zipped.length,appRssMiB:rss,untrustedOSLimitMiB:512,screenshots:['english-workbench.png','vietnamese-workbench.png']};
