@@ -101,6 +101,18 @@ try{
  const auditContent=(await readFile(await auditDownload.path())).toString('utf8');
  assert.match(auditContent,/valid\.pdf,PASS,2/);
  assert.match(auditContent,/bad\.pdf,FAIL,0/);
+ // A paused fetch represents a large conversion. The user must be able
+ // to cancel without closing the application or downloading a fake result.
+ await page.route('**/process',route=>{ /* Deliberately hold until AbortController aborts */ });
+ await page.locator('.operation[data-op="pdf-audit"]').click();
+ await page.locator('#files').setInputFiles({name:'cancel-test.pdf',mimeType:'application/pdf',buffer:source});
+ await page.locator('#process').click();
+ await page.locator('#cancel-process').waitFor({state:'visible'});
+ await page.locator('#cancel-process').click();
+ await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('cancelled'),{timeout:8000});
+ assert.equal(await page.locator('#cancel-process').isHidden(),true,'cancel control must reset');
+ assert.equal(await page.locator('#process').isEnabled(),true,'cancelled job should release UI slot');
+ await page.unroute('**/process');
  assert.deepEqual(errors,[],'browser console script errors');
  const rss=await rssMiB(app.pid);
  const report={browser:'Chromium Linux',pdfTestBytes:source.length,batchZipBytes:zipped.length,appRssMiB:rss,untrustedOSLimitMiB:512,screenshots:['english-workbench.png','vietnamese-workbench.png']};
