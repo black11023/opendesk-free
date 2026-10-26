@@ -96,3 +96,34 @@ func TestRealLibreOfficePowerPointAndBatch(t *testing.T){
   if e!=nil||pageCount!=expectedPages{t.Fatalf("batch file %q: pages=%d expected=%d err=%v",f.Name,pageCount,expectedPages,e)}
  }
 }
+
+func TestRealOfficeBestEffortBatchReport(t *testing.T){
+ requireExecutable(t,"soffice")
+ requireExecutable(t,"pdftotext")
+ ctx,cancel:=context.WithTimeout(context.Background(),3*time.Minute);defer cancel()
+ files:=[]engine.Input{
+  source(t,"real_office.docx"),
+  {Name:"intentionally-broken.docx",Data:[]byte("this is not a valid Office document")},
+  source(t,"real_sheet.xlsx"),
+  source(t,"real_slides.pptx"),
+ }
+ result,e:=office.RunBatch(ctx,files)
+ if e!=nil{t.Fatalf("real Office best-effort conversion failed: %v",e)}
+ archive,e:=zip.NewReader(bytes.NewReader(result.Data),int64(len(result.Data)))
+ if e!=nil{t.Fatal(e)}
+ if len(archive.File)!=4{t.Fatalf("expected three PDFs and one CSV report, got %d",len(archive.File))}
+ converted:=0;foundReport:=false
+ for _,entry:=range archive.File{
+  file,e:=entry.Open();if e!=nil{t.Fatal(e)}
+  data,e:=io.ReadAll(file);_ =file.Close();if e!=nil{t.Fatal(e)}
+  if strings.HasSuffix(entry.Name,".csv"){
+   foundReport=true
+   if !bytes.Contains(data,[]byte("intentionally-broken.docx,FAIL")){t.Fatalf("failed document absent from report: %s",data)}
+   if !bytes.Contains(data,[]byte("real_slides.pptx,PASS")){t.Fatal("valid PowerPoint missing PASS status")}
+  }else if strings.HasSuffix(entry.Name,".pdf"){
+   converted++
+   if _,e:=api.PageCount(ctx,bytes.NewReader(data),nil);e!=nil{t.Fatalf("corrupt converted PDF %s: %v",entry.Name,e)}
+  }else{t.Fatalf("unexpected archive entry %s",entry.Name)}
+ }
+ if converted!=3||!foundReport{t.Fatal("missing successful conversions or report")}
+}
