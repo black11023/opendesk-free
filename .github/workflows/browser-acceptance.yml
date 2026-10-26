@@ -1,0 +1,41 @@
+name: Chromium UI and memory acceptance
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium for reproducible browser interaction
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build actual local application
+        run: |
+          go mod tidy
+          go build -trimpath -o "$RUNNER_TEMP/opendesk-browser" ./cmd/opendesk
+      - name: "Real Chromium: bilingual search, PDF selection, batch ZIP and RSS"
+        env:
+          OPEN_DESK_EXECUTABLE: ${{ runner.temp }}/opendesk-browser
+        run: node tests/browser-e2e.mjs
+      - name: Upload screenshots and memory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opendesk-chromium-ui-memory
+          path: artifacts/browser/
+          if-no-files-found: warn
+          retention-days: 14

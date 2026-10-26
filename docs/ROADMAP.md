@@ -77,3 +77,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Soft Go heap budget 512 MiB and reject memory-intensive requests if Go HeapAlloc exceeds 300 MiB; still requires real high-volume profiling and external-tool memory controls.
 - Linux real LibreOffice DOCX/XLSX-to-PDF content checks and Tesseract/OCRmyPDF text extraction from actual generated scanned images. These are real dependency tests, not mocks.
 - Windows EXE and Setup install-upgrade-uninstall CI retained. Platform behavior remains Preview until real end-user installations and rendering reviews.
+
+### V0.6.1 Preview 1 — browser and real PowerPoint gate
+
+- Linux Chromium automation: English/Vietnamese interaction, operation search and categories, page-specific PDF download, multi-file PDF ZIP, screenshots and per-run process RSS report.
+- Real two-slide PPTX rendering in LibreOffice with strict slide count and extracted text checks; three-format DOCX/XLSX/PPTX batch acceptance.
+- Repeated batch PDF memory regression test (retained Go heap after GC); reject combined upload size before all files are buffered.
+- Still missing: real Windows interactive visual walkthrough, complicated fonts/charts/animations, low-memory-PC and large-file benchmarking, external OCR/Office subprocess RSS enforcement.

@@ -19,14 +19,19 @@ jobs:
       - name: Install actual offline OCR and Office engines
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc tesseract-ocr tesseract-ocr-eng tesseract-ocr-vie ocrmypdf ghostscript poppler-utils python3-pil fonts-dejavu-core
+          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress tesseract-ocr tesseract-ocr-eng tesseract-ocr-vie ocrmypdf ghostscript poppler-utils python3-pil fonts-dejavu-core
           command -v soffice
           command -v tesseract
           command -v ocrmypdf
           tesseract --list-langs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reproducible PowerPoint fixture generator
+        run: python -m pip install --disable-pip-version-check 'python-pptx==1.0.2' 'Pillow==11.1.0'
       - name: Resolve Go module checksums for real converter tests
         run: go mod tidy
-      - name: Generate real reproducible DOCX, XLSX and scanned PNG fixtures
-        run: python3 tests/generate_real_fixtures.py
+      - name: Generate real reproducible DOCX, XLSX, PPTX and scanned PNG fixtures
+        run: python tests/generate_real_fixtures.py
       - name: Integration tests using real LibreOffice, Tesseract and OCRmyPDF
         run: go test -tags=integration -count=1 -v ./internal/integration

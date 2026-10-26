@@ -29,7 +29,7 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.6.0-preview.1"
+const Version = "0.6.1-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.
@@ -159,6 +159,16 @@ func main() {
 			http.Error(w, localized(r,"Select 1–50 files","Chọn 1–50 tệp"), http.StatusBadRequest)
 			return
 		}
+        // Enforce an aggregate input budget before copying uploads into
+        // Go byte slices (the multipart parser may already have disk-spooled).
+        var combined int64
+        for _,header:=range uploads {
+          if header.Size<0||header.Size>engine.MaxBytes-combined {
+            http.Error(w,localized(r,"Combined upload exceeds 40 MB.","Tổng dung lượng tệp vượt 40 MB."),http.StatusRequestEntityTooLarge)
+            return
+          }
+          combined+=header.Size
+        }
 		op := r.FormValue("operation")
 		pageSelections := r.MultipartForm.Value["page_ranges"]
 		if op == "pdf-merge" {
@@ -171,7 +181,7 @@ func main() {
 		} else {
 			pageSelections = nil
 		}
-		var files []engine.Input
+		files := make([]engine.Input,0,len(uploads))
 		for _, f := range uploads {
 			if f.Size > engine.MaxBytes {
 				http.Error(w, localized(r,"File too large","Tệp quá lớn"), http.StatusBadRequest)

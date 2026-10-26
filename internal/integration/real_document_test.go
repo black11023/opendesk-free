@@ -14,6 +14,8 @@ import (
  "testing"
  "time"
 
+ "github.com/pdfcpu/pdfcpu/pkg/api"
+
  "opendesk-free/internal/engine"
  "opendesk-free/internal/ocr"
  "opendesk-free/internal/office"
@@ -64,4 +66,33 @@ func TestRealTesseractImagesAndOCRmyPDFScan(t *testing.T){
  result,e:=ocr.RunPDF(ctx,[]engine.Input{{Name:"scanned.pdf",Data:scan.Data}},"eng")
  if e!=nil{t.Fatalf("real OCRmyPDF failed: %v",e)}
  if !strings.Contains(pdfText(t,result.Data),"OPENDESK"){t.Fatalf("searchable PDF lacks OCR text: %q",pdfText(t,result.Data))}
+}
+
+func TestRealLibreOfficePowerPointAndBatch(t *testing.T){
+ requireExecutable(t,"soffice")
+ requireExecutable(t,"pdftotext")
+ ctx,cancel:=context.WithTimeout(context.Background(),2*time.Minute)
+ defer cancel()
+ presentation:=source(t,"real_slides.pptx")
+ result,e:=office.Run(ctx,[]engine.Input{presentation})
+ if e!=nil{t.Fatalf("real PowerPoint conversion failed: %v",e)}
+ if result.ContentType!="application/pdf"{t.Fatalf("unexpected PPTX output %s",result.ContentType)}
+ pages,e:=api.PageCount(ctx,bytes.NewReader(result.Data),nil)
+ if e!=nil||pages!=2{t.Fatalf("PowerPoint slide/page mismatch: pages=%d err=%v",pages,e)}
+ words:=pdfText(t,result.Data)
+ for _,heading:=range []string{"OPENDESK SLIDE ONE 2026","OPENDESK SLIDE TWO 2026"}{
+  if !strings.Contains(words,heading){t.Fatalf("slide title %q lost in rendered PDF: %q",heading,words)}
+ }
+ files:=[]engine.Input{source(t,"real_office.docx"),source(t,"real_sheet.xlsx"),presentation}
+ batch,e:=office.Run(ctx,files)
+ if e!=nil{t.Fatalf("real three-format Office batch failed: %v",e)}
+ archive,e:=zip.NewReader(bytes.NewReader(batch.Data),int64(len(batch.Data)))
+ if e!=nil||len(archive.File)!=3{t.Fatalf("batch returned %d files, err=%v",len(archive.File),e)}
+ for i,f:=range archive.File{
+  handle,e:=f.Open();if e!=nil{t.Fatal(e)}
+  pdf,e:=io.ReadAll(handle);_ =handle.Close();if e!=nil{t.Fatal(e)}
+  pageCount,e:=api.PageCount(ctx,bytes.NewReader(pdf),nil)
+  expectedPages:=1;if i==2{expectedPages=2}
+  if e!=nil||pageCount!=expectedPages{t.Fatalf("batch file %q: pages=%d expected=%d err=%v",f.Name,pageCount,expectedPages,e)}
+ }
 }

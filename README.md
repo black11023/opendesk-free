@@ -6,7 +6,7 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.5.2-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.6.1-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -79,3 +79,9 @@ Automation supports explicit `--quiet-install` and `--quiet-uninstall` switches.
 ### Real document integration gates (V0.6)
 
 A second Linux GitHub Actions job now installs **real LibreOffice, Tesseract (English and Vietnamese traineddata), OCRmyPDF and pdftotext**. It generates tiny reproducible DOCX, XLSX and scanned PNG documents and asserts the text contents of rendered PDFs and OCR output. Unlike earlier injected mock tests, these calls invoke the real local third-party engines. Windows installation acceptance remains in a separate CI job; conversion layout fidelity on an end-user Windows PC is still unverified. View [.github/workflows/real-document-integration.yml](.github/workflows/real-document-integration.yml).
+
+### V0.6.1 Preview 1 — browser, PowerPoint and memory gates
+
+- The real Linux LibreOffice integration job generates a two-slide PPTX with shapes, text and an embedded graphic. It checks that its PDF has exactly two pages and both slide titles, and also converts a three-format DOCX+XLSX+PPTX batch. This proves these fixtures' structural/text results, **not pixel-perfect visual fidelity** for every presentation.
+- A separate Chromium UI job opens the compiled application, searches/filters tools, switches English/Vietnamese, selects page 2 from a real PDF, downloads a selected PDF and a batch-rotation ZIP, and uploads bilingual screenshots and a Linux process RSS measurement. Screenshots are evidence for review, not certification of visual quality.
+- Repeated 5-PDF batch rotations are checked for retained Go heap regression after garbage collection. Combined upload bytes are now rejected before copying files into memory. Heap/RSS measurements of small fixtures are **not a hard RAM limit**, and separately installed LibreOffice/OCR tools are not covered by Go-only caps.
