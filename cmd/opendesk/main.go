@@ -29,7 +29,7 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.6.2-preview.1"
+const Version = "0.6.3-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.
@@ -110,6 +110,9 @@ func main() {
 	}
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
  processGate := newProcessGate(2)
+ // Optional external renderers (LibreOffice, Tesseract, OCRmyPDF) share
+ // one slot so multiple subprocess-heavy jobs never overlap in this app.
+ externalGate := newProcessGate(1)
 	mux.HandleFunc("GET /ocr-status",func(w http.ResponseWriter,r *http.Request){
   if !auth(w,r){return}
   w.Header().Set("Content-Type","application/json; charset=utf-8")
@@ -170,6 +173,17 @@ func main() {
           combined+=header.Size
         }
 		op := r.FormValue("operation")
+        if isExternalOperation(op){
+          if !externalGate.TryEnter(){
+            w.Header().Set("Retry-After","3")
+            http.Error(w,localized(r,
+              "Office/OCR engine busy. Try again after the current conversion.",
+              "Công cụ Office/OCR đang bận. Vui lòng thử lại sau khi tác vụ hiện tại hoàn tất."),
+              http.StatusTooManyRequests)
+            return
+          }
+          defer externalGate.Leave()
+        }
 		pageSelections := r.MultipartForm.Value["page_ranges"]
 		if op == "pdf-merge" {
 			if len(pageSelections) != len(uploads) {
@@ -202,7 +216,11 @@ func main() {
 		}
 		var result engine.Result
         var e error
-        if op=="office-pdf"{
+        if op=="office-pdf-batch"{
+          ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
+          defer cancel()
+          result,e=office.RunBatch(ctx,files)
+        }else if op=="office-pdf"{
           ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
           defer cancel()
           result,e=office.Run(ctx,files)
