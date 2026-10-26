@@ -109,7 +109,7 @@ try{
  await page.locator('#process').click();
  await page.locator('#cancel-process').waitFor({state:'visible'});
  await page.locator('#cancel-process').click();
- await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('cancelled'),{timeout:8000});
+ await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('cancelled'),null,{timeout:8000});
  assert.equal(await page.locator('#cancel-process').isHidden(),true,'cancel control must reset');
  assert.equal(await page.locator('#process').isEnabled(),true,'cancelled job should release UI slot');
  await page.unroute('**/process');
