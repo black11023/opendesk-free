@@ -27,6 +27,8 @@ jobs:
         run: |
           go mod tidy
           go test -count=1 -v ./internal/procrun
+      - name: Verify release-gate behavior for duplicate workflow runs
+        run: bash tests/release-duplicate-runs.sh
       - name: Build actual local application
         run: |
           go mod tidy

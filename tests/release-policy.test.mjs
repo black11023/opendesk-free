@@ -13,3 +13,11 @@ test('Windows build never publishes before independent CI gates',()=>{
  assert.match(release,/gh release create/);
  assert.match(release,/current" = "\$SOURCE_SHA"/);
 });
+
+test('multiple runs for exact SHA use newest one; older success cannot mask newer failure',()=>{
+ assert.match(release,/sort_by\(\.created_at, \.run_number, \.id\) \| last \/\/ null/);
+ assert.match(release,/\$state" != completed/);
+ assert.match(release,/\$status" != success/);
+ assert.match(release,/\$count" -lt 1/);
+ assert.doesNotMatch(release,/\$count" -ne 1/);
+});
