@@ -37,14 +37,19 @@ jobs:
           runs="$(gh api "repos/$REPO/actions/runs?head_sha=$SOURCE_SHA&event=push&per_page=100")"
           for name in 'Build and test Windows installer' 'Real Office and OCR document integration' 'Chromium UI and memory acceptance'; do
             records="$(printf '%s' "$runs" | jq -c --arg name "$name" --arg sha "$SOURCE_SHA" '[.workflow_runs[]|select(.name==$name and .event=="push" and .head_branch=="main" and .head_sha==$sha)]')"
+            # GitHub may schedule multiple push workflow runs for the same
+            # HEAD. Use the newest run for every gate, never an earlier PASS
+            # to hide a newer failure/pending rerun.
             count="$(printf '%s' "$records" | jq 'length')"
-            status="$(printf '%s' "$records" | jq -r '.[0].conclusion // "pending"')"
-            if [ "$count" -ne 1 ] || [ "$status" != success ]; then
-              echo "$name: $status ($count workflow runs). Release BLOCKED."
+            latest="$(printf '%s' "$records" | jq -c 'sort_by(.created_at, .run_number, .id) | last // null')"
+            status="$(printf '%s' "$latest" | jq -r '.conclusion // "pending"')"
+            state="$(printf '%s' "$latest" | jq -r '.status // "pending"')"
+            if [ "$count" -lt 1 ] || [ "$state" != completed ] || [ "$status" != success ]; then
+              echo "$name: newest run $state/$status ($count matching runs). Release BLOCKED."
               exit 0
             fi
             if [ "$name" = 'Build and test Windows installer' ]; then
-              run_id="$(printf '%s' "$records" | jq -r '.[0].id')"
+              run_id="$(printf '%s' "$latest" | jq -r '.id')"
             fi
           done
           echo "windows_run=$run_id" >> "$GITHUB_OUTPUT"
