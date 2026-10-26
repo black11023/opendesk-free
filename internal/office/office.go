@@ -15,6 +15,7 @@ import(
  "time"
  "github.com/pdfcpu/pdfcpu/pkg/api"
  "opendesk-free/internal/engine"
+ "opendesk-free/internal/procrun"
 )
 const MaxFiles=8
 const MaxOutputBytes=80<<20
@@ -30,7 +31,7 @@ func FindBinary()(string,error){
 func Probe(ctx context.Context)Status{
  p,e:=FindBinary();if e!=nil{return Status{Detail:e.Error()}}
  c,cancel:=context.WithTimeout(ctx,8*time.Second);defer cancel()
- out,e:=exec.CommandContext(c,p,"--version").CombinedOutput()
+ out,e:=procrun.Command(c,p,"--version").CombinedOutput()
  if e!=nil{return Status{Detail:"LibreOffice found but unable to start"}}
  ver:=strings.TrimSpace(string(out));if len(ver)>80{ver=ver[:80]}
  return Status{Installed:true,Detail:ver}
@@ -40,7 +41,7 @@ type LocalExecutor struct{}
 type boundedWriter struct{b bytes.Buffer;max int}
 func(w *boundedWriter)Write(p []byte)(int,error){if w.b.Len()+len(p)>w.max{return 0,errors.New("tool log too large")};return w.b.Write(p)}
 func(LocalExecutor)Run(ctx context.Context,binary string,args []string)error{
- cmd:=exec.CommandContext(ctx,binary,args...)
+ cmd:=procrun.Command(ctx,binary,args...)
  out,errout:=&boundedWriter{max:8192},&boundedWriter{max:8192}
  cmd.Stdout=out;cmd.Stderr=errout
  e:=cmd.Run()

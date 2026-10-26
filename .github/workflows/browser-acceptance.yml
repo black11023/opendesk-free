@@ -23,6 +23,10 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.56.1
           npx playwright install --with-deps chromium
+      - name: Verify OCR/Office subprocess descendants terminate on cancellation
+        run: |
+          go mod tidy
+          go test -count=1 -v ./internal/procrun
       - name: Build actual local application
         run: |
           go mod tidy

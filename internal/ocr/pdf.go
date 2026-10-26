@@ -16,6 +16,7 @@ import (
 
  "github.com/pdfcpu/pdfcpu/pkg/api"
  "opendesk-free/internal/engine"
+ "opendesk-free/internal/procrun"
 )
 
 const PDFMaxPages = 100
@@ -34,7 +35,7 @@ func PDFProbe(ctx context.Context) PDFStatus {
  bin,e:=PDFBinary()
  if e!=nil{return PDFStatus{Detail:"OCRmyPDF is not installed. See docs/OCR_LOCAL_SETUP.md."}}
  c,cancel:=context.WithTimeout(ctx,8*time.Second);defer cancel()
- cmd:=exec.CommandContext(c,bin,"--version")
+ cmd:=procrun.Command(c,bin,"--version")
  b,e:=cmd.Output()
  if e!=nil{return PDFStatus{Detail:"OCRmyPDF detected but the command cannot start; check its dependencies."}}
  version:=strings.TrimSpace(string(b))
@@ -44,7 +45,7 @@ func PDFProbe(ctx context.Context) PDFStatus {
 type PDFExecutor interface { Execute(context.Context,string,[]string) error }
 type CommandPDFExecutor struct{}
 func (CommandPDFExecutor) Execute(ctx context.Context, executable string, args []string) error {
- cmd:=exec.CommandContext(ctx,executable,args...) // fixed argv, no shell or interpolation
+ cmd:=procrun.Command(ctx,executable,args...) // fixed argv, no shell or interpolation
  errbuf:=&limitWriter{max:8192}
  cmd.Stdout=io.Discard
  cmd.Stderr=errbuf
