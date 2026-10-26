@@ -74,3 +74,12 @@ test('resilient Office batch controls are bilingual and guarded by local convert
  assert.match(html,/data-vi="Office hàng loạt → PDF \+ báo cáo"/);
  assert.match(html,/state\.op==='office-pdf-batch'/);
 });
+
+test('request cancellation is exposed for English and Vietnamese',()=>{
+ assert.match(html,/id="cancel-process"/);
+ assert.match(html,/data-en="Cancel processing"/);
+ assert.match(html,/data-vi="Hủy xử lý"/);
+ assert.match(html,/new AbortController\(\)/);
+ assert.match(html,/signal:controller\.signal/);
+ assert.match(html,/state\.activeRequest\.abort\(\)/);
+});

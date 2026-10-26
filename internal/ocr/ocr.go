@@ -21,6 +21,7 @@ import (
 
  "github.com/pdfcpu/pdfcpu/pkg/api"
  "opendesk-free/internal/engine"
+ "opendesk-free/internal/procrun"
 )
 
 const MaxOCRImages=10
@@ -48,7 +49,7 @@ func Probe(ctx context.Context) Status {
  p,e:=FindBinary()
  if e!=nil{return Status{Detail:"Tesseract not found. See the local OCR setup guide."}}
  c,cancel:=context.WithTimeout(ctx,8*time.Second);defer cancel()
- cmd:=exec.CommandContext(c,p,"--list-langs")
+ cmd:=procrun.Command(c,p,"--list-langs")
  out,e:=cmd.CombinedOutput()
  if e!=nil{return Status{Installed:true,Detail:"Tesseract is installed but language data cannot be listed."}}
  langs:=map[string]bool{}
@@ -70,7 +71,7 @@ type LocalRunner struct {Executable string}
 func (r LocalRunner)Recognize(ctx context.Context, raw []byte, language, format string)([]byte,error){
  args:=[]string{"stdin","stdout","-l",language}
  if format=="pdf"{args=append(args,"pdf")}
- cmd:=exec.CommandContext(ctx,r.Executable,args...)
+ cmd:=procrun.Command(ctx,r.Executable,args...)
  cmd.Stdin=bytes.NewReader(raw)
  out:=&limitWriter{max:MaxOutputBytes}
  errOut:=&limitWriter{max:8192}

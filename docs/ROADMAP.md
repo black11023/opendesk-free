@@ -98,3 +98,11 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Resilient 2–8 source Office conversion with per-file CSV PASS/FAIL and SHA-256 in one ZIP, alongside successful PDFs; existing ordinary Office conversion contract is preserved.
 - Dedicated workflow_run publisher requires three independent **push-to-main** workflows all successful on exactly the current main SHA; verifies binary hashes before release. Pull-request runs cannot satisfy the release gate.
 - Remaining: native OS process groups / child-tree termination and hard per-process RAM caps, user-PC validation, portable desktop UX polish, full PDF metadata report.
+
+### V0.6.4 — cancellable renderers and real browser cancellation tests
+
+- A local Cancel button aborts browser processing without closing OpenDesk or overwriting source documents; request cancellation is carried to backend command contexts.
+- Optional Office/OCR subprocesses launch in dedicated process groups. Linux/macOS cancels an entire process group; Windows attempts taskkill /T /F of the process tree, falling back to killing the parent. This is **best effort**, not a hardened sandbox or guaranteed OS-level memory cap.
+- A Linux regression starts a real shell and background worker, cancels and checks that the worker stops. Chromium UI exercises request cancellation and responsive reset, besides earlier PDF and bilingual operations. Windows compile/runtime installer checks retained.
+- Fixed malformed Markdown feature-table line breaks in README, plus more explicit limits and documentation.
+- Future: Windows real Office/Tesseract child-process exit verification on actual PC and hard memory-budgeting through OS facilities where safe.

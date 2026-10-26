@@ -6,7 +6,7 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.6.3-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.6.4-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -14,13 +14,15 @@ OpenDesk Free provides a friendly desktop launcher for essential document operat
 
 | Feature | State | Details |
 |---|---|---|
-| PDF merge, select/split/reorder pages, rotate | **Built-in** | Choose page ranges |\n| **PDF batch audit → CSV** | **Built-in (V0.6.2)** | 1–50 documents, valid/invalid status, pages, SHA-256, filenames, byte sizes |
+| PDF merge, select/split/reorder pages, rotate | **Built-in** | Choose page ranges |
+| **PDF batch audit → CSV** | **Built-in (V0.6.2)** | 1–50 documents, valid/invalid status, pages, SHA-256, filenames, byte sizes |
 | PNG/JPG → PDF | **Built-in** | Max 25 images |
 | CSV → XLSX, DOCX → plain text | **Built-in** | Original files stay unchanged |
 | Organize ZIP, SHA-256 duplicate detection, text merge | **Built-in** | Download new results |
 | Image OCR → TXT/searchable PDF | **Optional local adapter** | Install Tesseract and language data |
 | Scan-PDF → searchable PDF | **Optional local adapter** | Install OCRmyPDF + Tesseract |
-| Word/Excel/PowerPoint → PDF | **Optional local adapter** | Install LibreOffice separately |\n| **Office batch → ZIP + CSV** | **Optional local adapter (V0.6.3)** | 2–8 files; preserves successful PDFs and reports individual failures |
+| Word/Excel/PowerPoint → PDF | **Optional local adapter** | Install LibreOffice separately |
+| **Office batch → ZIP + CSV** | **Optional local adapter (V0.6.3)** | 2–8 files; preserves successful PDFs and reports individual failures |
 | 44 free software links, 11 categories | **Directory only** | External projects, not integrated |
 | FFmpeg, workflow automation, more platforms | **Planned** | Not yet available |
 
@@ -95,3 +97,9 @@ The built-in **Audit PDF files → CSV** tool inspects up to 50 inputs (40 MB to
 - New independent **Office batch → PDF + report** operation. Select 2–8 Office documents; one ZIP includes each successfully generated PDF and an Excel-compatible CSV with one PASS/FAIL row and SHA-256 per original, including failures. This is deliberately distinct from the existing all-or-nothing Office → PDF operation. A ZIP may contain only the failure report when no conversion succeeded; this never pretends the documents converted.
 - External Office/OCR converter operations share a **single admission slot** across LibreOffice/Tesseract/OCRmyPDF; a second simultaneous job receives a bilingual HTTP 429 instead of starting another resource-intensive subprocess. Normal built-in jobs can still run alongside one external job. This is an admission/concurrency limit, **not** an OS-wide process RAM cap.
 - Public previews are now published by [a dedicated three-gate workflow](.github/workflows/release-preview.yml): it checks the exact current `main` commit for PASS results from the Windows, actual Office/OCR and Chromium workflows, downloads the tested Windows artifacts, verifies SHA-256 and then publishes. A missing, failed or cancelled gate blocks release.
+
+### V0.6.4 Preview 1 — cancellable external process trees
+
+- The local Office and OCR adapters now launch external converters as distinct process groups on Linux/macOS, and a separate Windows process group with `taskkill /T /F` tree termination on cancellation. This is a **best-effort cleanup of descendants after request cancellation/timeouts**, not a hard memory or CPU sandbox.
+- Chromium CI runs a Linux regression that intentionally starts a shell plus background child, cancels the request, and confirms the child is no longer running. Windows builds compile platform-specific cancellation support; an exhaustive Windows worker-process-tree test remains a future requirement.
+- Fixes the README feature-table formatting so international users can distinguish built-in, optional, planned and directory-only features.
