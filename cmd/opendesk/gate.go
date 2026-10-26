@@ -7,3 +7,9 @@ func(g *processGate)TryEnter()bool{
  select{case g.slots<-struct{}{}:return true;default:return false}
 }
 func(g *processGate)Leave(){<-g.slots}
+
+// Only these operations spawn optional third-party document processors.
+func isExternalOperation(op string)bool{
+ switch op {case "office-pdf","office-pdf-batch","ocr-pdf","ocr-images":return true}
+ return false
+}
