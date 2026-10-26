@@ -19,7 +19,7 @@ jobs:
       - name: Install actual offline OCR and Office engines
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc tesseract-ocr tesseract-ocr-eng tesseract-ocr-vie ocrmypdf ghostscript poppler-utils python3-pil fonts-dejavu-core
+          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress tesseract-ocr tesseract-ocr-eng tesseract-ocr-vie ocrmypdf ghostscript poppler-utils python3-pil fonts-dejavu-core
           command -v soffice
           command -v tesseract
           command -v ocrmypdf
