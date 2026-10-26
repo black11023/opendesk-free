@@ -27,7 +27,7 @@ jobs:
         run: |
           go mod tidy
           go build -trimpath -o "$RUNNER_TEMP/opendesk-browser" ./cmd/opendesk
-      - name: Real Chromium: bilingual search, PDF selection, batch ZIP and RSS
+      - name: "Real Chromium: bilingual search, PDF selection, batch ZIP and RSS"
         env:
           OPEN_DESK_EXECUTABLE: ${{ runner.temp }}/opendesk-browser
         run: node tests/browser-e2e.mjs
