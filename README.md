@@ -6,7 +6,7 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.6.2-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.6.3-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -20,7 +20,7 @@ OpenDesk Free provides a friendly desktop launcher for essential document operat
 | Organize ZIP, SHA-256 duplicate detection, text merge | **Built-in** | Download new results |
 | Image OCR → TXT/searchable PDF | **Optional local adapter** | Install Tesseract and language data |
 | Scan-PDF → searchable PDF | **Optional local adapter** | Install OCRmyPDF + Tesseract |
-| Word/Excel/PowerPoint → PDF | **Optional local adapter (V0.5)** | Install LibreOffice separately |
+| Word/Excel/PowerPoint → PDF | **Optional local adapter** | Install LibreOffice separately |\n| **Office batch → ZIP + CSV** | **Optional local adapter (V0.6.3)** | 2–8 files; preserves successful PDFs and reports individual failures |
 | 44 free software links, 11 categories | **Directory only** | External projects, not integrated |
 | FFmpeg, workflow automation, more platforms | **Planned** | Not yet available |
 
@@ -89,3 +89,9 @@ A second Linux GitHub Actions job now installs **real LibreOffice, Tesseract (En
 ### V0.6.2 Preview — per-file PDF audit
 
 The built-in **Audit PDF files → CSV** tool inspects up to 50 inputs (40 MB total) without modifying any original. It produces an Excel-compatible UTF-8 CSV containing one row per file with source name, PASS/FAIL, validated page count, bytes, SHA-256 and a brief error description. Malformed files are included as **FAIL rows** rather than silently omitted. Suspicious spreadsheet-formula prefixes in filenames are neutralized in the CSV output. This is a document integrity inventory, not a malware detector, electronic signature validator or digital forensics service.
+
+### V0.6.3 Preview 1 — resilient Office batches & tested release gating
+
+- New independent **Office batch → PDF + report** operation. Select 2–8 Office documents; one ZIP includes each successfully generated PDF and an Excel-compatible CSV with one PASS/FAIL row and SHA-256 per original, including failures. This is deliberately distinct from the existing all-or-nothing Office → PDF operation. A ZIP may contain only the failure report when no conversion succeeded; this never pretends the documents converted.
+- External Office/OCR converter operations share a **single admission slot** across LibreOffice/Tesseract/OCRmyPDF; a second simultaneous job receives a bilingual HTTP 429 instead of starting another resource-intensive subprocess. Normal built-in jobs can still run alongside one external job. This is an admission/concurrency limit, **not** an OS-wide process RAM cap.
+- Public previews are now published by [a dedicated three-gate workflow](.github/workflows/release-preview.yml): it checks the exact current `main` commit for PASS results from the Windows, actual Office/OCR and Chromium workflows, downloads the tested Windows artifacts, verifies SHA-256 and then publishes. A missing, failed or cancelled gate blocks release.

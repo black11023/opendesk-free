@@ -67,3 +67,10 @@ test('read-only PDF batch audit is labeled in both languages and permits multipl
  assert.match(html,/data-vi="Kiểm tra PDF hàng loạt → CSV"/);
  assert.match(html,/state\.op!=='pdf-audit'/);
 });
+
+test('resilient Office batch controls are bilingual and guarded by local converter',()=>{
+ assert.match(html,/data-op="office-pdf-batch"/);
+ assert.match(html,/data-en="Office batch → PDF \+ report"/);
+ assert.match(html,/data-vi="Office hàng loạt → PDF \+ báo cáo"/);
+ assert.match(html,/state\.op==='office-pdf-batch'/);
+});

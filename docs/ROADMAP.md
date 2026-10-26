@@ -91,3 +91,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Security: protect CSV output against spreadsheet-formula injection; retain UTF-8 BOM for Excel and exact input order.
 - Go negative unit tests and real Chromium download test are release gates, in addition to Windows Setup and real Office/OCR integration.
 - Not a virus scan, legal authenticity audit or certification of an entire PDF's visible content.
+
+### V0.6.3 Preview 1 — Office batch status and strict release gate
+
+- External Office/OCR jobs limited to one active at a time (HTTP 429 on conflict); retains two overall Go processing slots. Not a hard memory cap; no claim of taming LibreOffice child-process RSS on Windows.
+- Resilient 2–8 source Office conversion with per-file CSV PASS/FAIL and SHA-256 in one ZIP, alongside successful PDFs; existing ordinary Office conversion contract is preserved.
+- Dedicated workflow_run publisher requires three independent **push-to-main** workflows all successful on exactly the current main SHA; verifies binary hashes before release. Pull-request runs cannot satisfy the release gate.
+- Remaining: native OS process groups / child-tree termination and hard per-process RAM caps, user-PC validation, portable desktop UX polish, full PDF metadata report.
