@@ -37,4 +37,26 @@ draw=ImageDraw.Draw(im)
 font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',84)
 draw.text((75,75),'OPENDESK 2026',font=font,fill='black')
 im.save(ROOT/'real_scanned_english.png',dpi=(300,300))
+
+# Real, two-slide OOXML PowerPoint with vector shapes, text and an embedded image.
+# Only generated public CI content is included.
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
+deck=Presentation()
+deck.slide_width=Inches(13.333)
+deck.slide_height=Inches(7.5)
+for heading in ('OPENDESK SLIDE ONE 2026', 'OPENDESK SLIDE TWO 2026'):
+    slide=deck.slides.add_slide(deck.slide_layouts[6])
+    rect=slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(.5), Inches(.5), Inches(12.3), Inches(.8))
+    rect.fill.solid()
+    rect.fill.fore_color.rgb=RGBColor(15,74,109)
+    rect.line.fill.background()
+    title=slide.shapes.add_textbox(Inches(1), Inches(1.7), Inches(11.3), Inches(1))
+    title.text_frame.text=heading
+    title.text_frame.paragraphs[0].runs[0].font.size=Pt(36)
+    slide.shapes.add_picture(str(ROOT/'real_scanned_english.png'), Inches(1), Inches(3), width=Inches(7.5))
+deck.save(ROOT/'real_slides.pptx')
+
 print('Generated public test documents:',*[p.name for p in sorted(ROOT.iterdir())])
