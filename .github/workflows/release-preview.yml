@@ -65,11 +65,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          gh run download "$WINDOWS_RUN" -R "$REPO" -n OpenDeskFree-Windows-v0.6.4_preview1 -D dist
+          gh run download "$WINDOWS_RUN" -R "$REPO" -n OpenDeskFree-Windows-v0.6.5_preview1 -D dist
           cd dist
           sha256sum --check SHA256SUMS.txt
-          test -s OpenDeskFree_Setup_0.6.4_preview1.exe
-          test -s OpenDeskFree_Portable_0.6.4_preview1.exe
+          test -s OpenDeskFree_Setup_0.6.5_preview1.exe
+          test -s OpenDeskFree_Portable_0.6.5_preview1.exe
       - name: Publish unsigned preview only once, from fully tested SHA
         if: steps.gates.outputs.ready == 'true'
         env:
@@ -81,10 +81,10 @@ jobs:
           set -euo pipefail
           current="$(gh api "repos/$REPO/commits/main" --jq .sha)"
           [ "$current" = "$SOURCE_SHA" ] || { echo 'Main changed; no release'; exit 0; }
-          tag='v0.6.4-preview.1'
+          tag='v0.6.5-preview.1'
           if gh release view "$tag" -R "$REPO" >/dev/null 2>&1; then
             echo "Release $tag already exists; refusing to overwrite."
             exit 0
           fi
-          gh api "repos/$REPO/contents/docs/RELEASE_NOTES_V0.6.4_PREVIEW1.md?ref=$SOURCE_SHA" --jq .content | base64 -d > release-notes.md
-          gh release create "$tag" dist/*.exe dist/SHA256SUMS.txt -R "$REPO" --target "$SOURCE_SHA" --title 'OpenDesk Free v0.6.4 Preview 1' --notes-file release-notes.md --prerelease
+          gh api "repos/$REPO/contents/docs/RELEASE_NOTES_V0.6.5_PREVIEW1.md?ref=$SOURCE_SHA" --jq .content | base64 -d > release-notes.md
+          gh release create "$tag" dist/*.exe dist/SHA256SUMS.txt -R "$REPO" --target "$SOURCE_SHA" --title 'OpenDesk Free v0.6.5 Preview 1' --notes-file release-notes.md --prerelease

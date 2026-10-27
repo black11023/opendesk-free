@@ -67,6 +67,25 @@ try{
  await page.screenshot({path:path.join(artifactDir,'vietnamese-workbench.png'),fullPage:true});
  await page.locator('#lang').selectOption('en');
  await page.locator('#tool-search').fill('');
+
+ // A new user sees an operation-specific explanation and an actionable error
+ // before an unsupported file can be submitted; language switch translates it.
+ await page.locator('.operation[data-op="csv-xlsx"]').click();
+ assert.match(await page.locator('#beginner-tip').innerText(),/CSV files/);
+ await page.locator('#files').setInputFiles({name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('not a csv')});
+ assert.equal(await page.locator('#file-warning').isVisible(),true);
+ assert.match(await page.locator('#file-warning').innerText(),/Wrong file type/);
+ assert.equal(await page.locator('#process').isDisabled(),true);
+ await page.locator('#lang').selectOption('vi');
+ assert.match(await page.locator('#file-warning').innerText(),/Sai loại tệp/);
+ await page.locator('#lang').selectOption('en');
+ await page.locator('#files').setInputFiles({name:'valid.csv',mimeType:'text/csv',buffer:Buffer.from('name,amount\\nExample,1\\n')});
+ assert.equal(await page.locator('#file-warning').isHidden(),true);
+ assert.equal(await page.locator('#process').isEnabled(),true);
+ // Office batch belongs in Office, not generic files.
+ await page.locator('#workbench-tabs button').filter({hasText:'Office'}).click();
+ assert.equal(await page.locator('.operation[data-op="office-pdf-batch"]').isVisible(),true);
+ await page.locator('#workbench-tabs button').first().click();
  await page.locator('.operation[data-op="pdf-split"]').click();
  await page.locator('#files').setInputFiles({name:'two-pages.pdf',mimeType:'application/pdf',buffer:source});
  await page.locator('#pdf-pages').fill('2');
