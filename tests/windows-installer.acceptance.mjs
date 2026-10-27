@@ -9,7 +9,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
 import {setTimeout as delay} from 'node:timers/promises';
-const setup=path.resolve('dist/OpenDeskFree_Setup_0.6.5_preview1.exe');
+const setup=path.resolve('dist/OpenDeskFree_Setup_0.6.6_preview1.exe');
 const portable=path.resolve('cmd/setup/payload/OpenDeskFree.exe');
 const regKey='HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenDeskFree';
 const missing=async p=>{try{await access(p);return false}catch(e){if(e.code==='ENOENT')return true;throw e}};

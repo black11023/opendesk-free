@@ -8,7 +8,7 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.6.5-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.6.6-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -106,7 +106,7 @@ The built-in **Audit PDF files → CSV** tool inspects up to 50 inputs (40 MB to
 - Chromium CI runs a Linux regression that intentionally starts a shell plus background child, cancels the request, and confirms the child is no longer running. Windows builds compile platform-specific cancellation support; an exhaustive Windows worker-process-tree test remains a future requirement.
 - Fixes the README feature-table formatting so international users can distinguish built-in, optional, planned and directory-only features.
 
-### V0.6.5 Preview 1 — beginner-friendly file selection
+### V0.6.6 Preview 1 — beginner-friendly file selection
 
 - The local workbench now explains each selected operation in **three short steps** in English and Vietnamese, including the output format. Help remains available entirely offline.
 - The file picker filters extensions for built-in text/CSV tools, PDF, image, OCR and optional Office operations. Drag/drop of unsupported extensions shows a clear bilingual warning **before processing** and disables the Process button.

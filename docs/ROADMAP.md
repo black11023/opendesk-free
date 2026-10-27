@@ -107,7 +107,7 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Fixed malformed Markdown feature-table line breaks in README, plus more explicit limits and documentation.
 - Future: Windows real Office/Tesseract child-process exit verification on actual PC and hard memory-budgeting through OS facilities where safe.
 
-### V0.6.5 Preview 1 — zero-cost first-use guidance
+### V0.6.6 Preview 1 — zero-cost first-use guidance
 
 - Implement a compact English/Vietnamese three-step explanation per built-in or optional operation in the existing workbench, with clear output expectations.
 - Restrict normal file-picker extensions, fail early with readable inline warnings for mismatched dropped files. Intentionally preserve invalid inputs for read-only PDF audits and resilient Office batch FAIL reporting.
