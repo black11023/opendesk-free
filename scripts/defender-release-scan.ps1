@@ -40,15 +40,41 @@ try {
     if (-not $status) { throw 'Defender status is unavailable' }
     $report.engine = [string]$status.AMEngineVersion
     $report.signatures = [string]$status.AntivirusSignatureVersion
-    if ($status.AMRunningMode -ne 'Normal' -or
-        $status.AntivirusEnabled -ne $true -or
-        $status.RealTimeProtectionEnabled -ne $true) {
-        throw "INCONCLUSIVE: Defender is not active (mode=$($status.AMRunningMode), antivirus=$($status.AntivirusEnabled), realtime=$($status.RealTimeProtectionEnabled))"
+    # GitHub-hosted runners can disable real-time scanning but still support
+    # actual, explicit on-demand scans. Do not treat that setting as a PASS.
+    # Prove malware signature matching with the harmless EICAR test file first.
+    $report.realtime_protection_enabled = [bool]$status.RealTimeProtectionEnabled
+    if ($status.AMRunningMode -ne 'Normal' -or $status.AntivirusEnabled -ne $true) {
+        throw "INCONCLUSIVE: Defender on-demand engine unavailable (mode=$($status.AMRunningMode), antivirus=$($status.AntivirusEnabled))"
     }
     if ($status.DefenderSignaturesOutOfDate -eq $true) {
         throw 'INCONCLUSIVE: Defender signatures are outdated'
     }
-    $startTime = Get-Date
+    # EICAR is an industry-standard NON-MALICIOUS AV test string. This
+    # positive control ensures a disabled/no-op scanner cannot silently PASS.
+    # Never change exclusions, tamper protection or antivirus preferences.
+    $controlFile = Join-Path $env:RUNNER_TEMP ('opendesk-eicar-' + [guid]::NewGuid().ToString('N') + '.com')
+    $positiveStart = (Get-Date).AddSeconds(-2)
+    $eicar = 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+    try {
+        [System.IO.File]::WriteAllBytes($controlFile,[System.Text.Encoding]::ASCII.GetBytes($eicar))
+        if (Test-Path -LiteralPath $controlFile -PathType Leaf) {
+            Start-MpScan -ScanType CustomScan -ScanPath $controlFile -ErrorAction Stop
+        }
+        $events = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object {
+            $_.InitialDetectionTime -and $_.InitialDetectionTime -ge $positiveStart
+        })
+        $positive = -not (Test-Path -LiteralPath $controlFile -PathType Leaf)
+        foreach ($evt in $events) {
+            if (($evt.Resources -join ' ') -like ('*' + [IO.Path]::GetFileName($controlFile) + '*')) { $positive = $true }
+        }
+        if (-not $positive) { throw 'INCONCLUSIVE: Defender did not detect the benign EICAR positive control' }
+        $report.positive_control = 'PASS_EICAR_DETECTED'
+    }
+    finally {
+        Remove-Item -LiteralPath $controlFile -Force -ErrorAction SilentlyContinue
+    }
+    $startTime = (Get-Date).AddSeconds(1)
     foreach ($item in $targets) {
         $before = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         $entry = [ordered]@{ file = $item.Name; bytes = $item.Length; sha256 = $before; scan = 'PENDING' }

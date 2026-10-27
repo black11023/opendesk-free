@@ -26,3 +26,7 @@ The Windows installer executes PowerShell `-ExecutionPolicy Bypass -EncodedComma
 - Wait for an actual analyst/reputation verdict and evidence before claiming a false positive. Code-signing with a consistent publisher certificate helps trust but is not a guarantee against malware alerts.
 
 Related issue: https://github.com/black11023/opendesk-free/issues/14
+
+### CI environment observation
+
+PR #15 first Windows CI run showed `AMRunningMode=Normal`, `AntivirusEnabled=True`, but `RealTimeProtectionEnabled=False` on a GitHub-hosted Windows runner. The strict initial gate correctly produced `BLOCKED/INCONCLUSIVE`. Updated diagnostic allows an on-demand scanner **only if** it detects the harmless EICAR positive control before scanning both EXEs; no protection exceptions or bypass are applied. If EICAR cannot be detected, release remains blocked.
