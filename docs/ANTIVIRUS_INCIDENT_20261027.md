@@ -30,3 +30,7 @@ Related issue: https://github.com/black11023/opendesk-free/issues/14
 ### CI environment observation
 
 PR #15 first Windows CI run showed `AMRunningMode=Normal`, `AntivirusEnabled=True`, but `RealTimeProtectionEnabled=False` on a GitHub-hosted Windows runner. The strict initial gate correctly produced `BLOCKED/INCONCLUSIVE`. Updated diagnostic allows an on-demand scanner **only if** it detects the harmless EICAR positive control before scanning both EXEs; no protection exceptions or bypass are applied. If EICAR cannot be detected, release remains blocked.
+
+### Independent Windows 11 ARM64 security runner
+
+The `windows-latest` hosted runner on the initial PR showed realtime=False and did not detect EICAR in a second on-demand test. We therefore moved antivirus verification to a **separate Windows 11 ARM64 runner** (`windows-11-vs2026-arm`) after the x64 build completes. The runner downloads the exact artifacts from the build, verifies their SHA-256, requires EICAR detection, scans both x64 EXE files and fails the entire Windows workflow on any inconclusive security result. The source image documentation states Microsoft Defender is not disabled on the Windows 11 ARM images. Actual CI evidence, not this documentation alone, determines PASS/FAIL.

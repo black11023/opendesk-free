@@ -57,14 +57,26 @@ try {
     $positiveStart = (Get-Date).AddSeconds(-2)
     $eicar = 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
     try {
-        [System.IO.File]::WriteAllBytes($controlFile,[System.Text.Encoding]::ASCII.GetBytes($eicar))
+        $writeSucceeded = $false
+        try {
+            [System.IO.File]::WriteAllBytes($controlFile,[System.Text.Encoding]::ASCII.GetBytes($eicar))
+            $writeSucceeded = $true
+        } catch {
+            # Active Defender may block the EICAR test file during write.
+            # Accept this only when a matching threat detection is recorded.
+            Write-Host "EICAR creation blocked or interrupted: $($_.Exception.Message)"
+        }
         if (Test-Path -LiteralPath $controlFile -PathType Leaf) {
-            Start-MpScan -ScanType CustomScan -ScanPath $controlFile -ErrorAction Stop
+            try {
+                Start-MpScan -ScanType CustomScan -ScanPath $controlFile -ErrorAction Stop
+            } catch {
+                Write-Host "EICAR scanner returned an error; checking threat log: $($_.Exception.Message)"
+            }
         }
         $events = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object {
             $_.InitialDetectionTime -and $_.InitialDetectionTime -ge $positiveStart
         })
-        $positive = -not (Test-Path -LiteralPath $controlFile -PathType Leaf)
+        $positive = $writeSucceeded -and -not (Test-Path -LiteralPath $controlFile -PathType Leaf)
         foreach ($evt in $events) {
             if (($evt.Resources -join ' ') -like ('*' + [IO.Path]::GetFileName($controlFile) + '*')) { $positive = $true }
         }
