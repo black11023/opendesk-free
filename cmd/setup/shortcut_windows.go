@@ -33,10 +33,10 @@ func comHR(op string, h uintptr) error {
     if int32(uint32(h))<0 { return fmt.Errorf("%s: HRESULT 0x%08x",op,uint32(h)) }
     return nil
 }
-func comCall(instance uintptr,method uintptr,args ...uintptr) uintptr {
-    vtable:=*(*uintptr)(unsafe.Pointer(instance))
-    address:=*(*uintptr)(unsafe.Pointer(vtable+method*unsafe.Sizeof(uintptr(0))))
-    arguments:=append([]uintptr{instance},args...)
+func comCall(instance unsafe.Pointer,method uintptr,args ...uintptr) uintptr {
+    vtable:=*(*unsafe.Pointer)(instance)
+    address:=*(*uintptr)(unsafe.Add(vtable,method*unsafe.Sizeof(uintptr(0))))
+    arguments:=append([]uintptr{uintptr(instance)},args...)
     result,_,_:=syscall.SyscallN(address,arguments...)
     return result
 }
@@ -47,10 +47,10 @@ func createNativeShortcut(target,link string) error {
     h,_,_:=coInitializeEx.Call(0,2) // COINIT_APARTMENTTHREADED
     if err:=comHR("CoInitializeEx",h);err!=nil{return err}
     defer coUninitialize.Call()
-    var instance uintptr
+    var instance unsafe.Pointer
     h,_,_=coCreateInstance.Call(uintptr(unsafe.Pointer(&clsidShellLink)),0,1,uintptr(unsafe.Pointer(&iidShellLinkW)),uintptr(unsafe.Pointer(&instance)))
     if err:=comHR("CoCreateInstance ShellLink",h);err!=nil{return err}
-    if instance==0{return fmt.Errorf("CoCreateInstance returned a nil ShellLink")}
+    if instance==nil{return fmt.Errorf("CoCreateInstance returned a nil ShellLink")}
     defer comCall(instance,2)
     targetW,e:=syscall.UTF16PtrFromString(target);if e!=nil{return e}
     if e=comHR("IShellLinkW.SetPath",comCall(instance,20,uintptr(unsafe.Pointer(targetW))));e!=nil{return e}
@@ -58,9 +58,9 @@ func createNativeShortcut(target,link string) error {
     if e=comHR("IShellLinkW.SetWorkingDirectory",comCall(instance,9,uintptr(unsafe.Pointer(workingW))));e!=nil{return e}
     descW,e:=syscall.UTF16PtrFromString("OpenDesk Free local document tools");if e!=nil{return e}
     if e=comHR("IShellLinkW.SetDescription",comCall(instance,7,uintptr(unsafe.Pointer(descW))));e!=nil{return e}
-    var persist uintptr
+    var persist unsafe.Pointer
     if e=comHR("IShellLinkW.QueryInterface",comCall(instance,0,uintptr(unsafe.Pointer(&iidPersistFile)),uintptr(unsafe.Pointer(&persist))));e!=nil{return e}
-    if persist==0{return fmt.Errorf("ShellLink did not implement IPersistFile")}
+    if persist==nil{return fmt.Errorf("ShellLink did not implement IPersistFile")}
     defer comCall(persist,2)
     linkW,e:=syscall.UTF16PtrFromString(link);if e!=nil{return e}
     if e=comHR("IPersistFile.Save",comCall(persist,6,uintptr(unsafe.Pointer(linkW)),1));e!=nil{return e}
