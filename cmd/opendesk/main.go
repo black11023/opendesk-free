@@ -14,7 +14,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os/exec"
 	"runtime"
  "runtime/debug"
 	"strings"
