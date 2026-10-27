@@ -47,6 +47,21 @@ jobs:
           Get-FileHash dist/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $(Split-Path -Leaf $_.Path)" } | Out-File dist/SHA256SUMS.txt -Encoding utf8
       - name: Windows Setup installation/upgrade/uninstall acceptance
         run: node --test tests/windows-installer.acceptance.mjs
+      - name: Antivirus security gate (both exact built EXEs)
+        shell: pwsh
+        run: |
+          ./scripts/defender-release-scan.ps1 -Paths @(
+            'dist/OpenDeskFree_Portable_0.6.5_preview1.exe',
+            'dist/OpenDeskFree_Setup_0.6.5_preview1.exe'
+          ) -ReportPath 'dist/ANTIVIRUS_SCAN.json'
+      - name: Keep AV scan evidence even when security gate blocks release
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenDeskFree-Windows-AV-Evidence
+          path: dist/ANTIVIRUS_SCAN.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Upload installer build artifacts
         uses: actions/upload-artifact@v4
         with:
