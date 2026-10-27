@@ -74,7 +74,7 @@ try {
     finally {
         Remove-Item -LiteralPath $controlFile -Force -ErrorAction SilentlyContinue
     }
-    $startTime = (Get-Date).AddSeconds(1)
+    $startTime = Get-Date
     foreach ($item in $targets) {
         $before = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         $entry = [ordered]@{ file = $item.Name; bytes = $item.Length; sha256 = $before; scan = 'PENDING' }
