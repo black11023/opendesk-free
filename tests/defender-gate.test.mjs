@@ -15,7 +15,9 @@ test('antivirus missing, disabled or detection fails closed without exclusions',
  assert.match(gate,/Start-MpScan -ScanType CustomScan -ScanPath/);
  assert.match(gate,/Get-MpThreatDetection/);
  assert.match(gate,/AMRunningMode -ne 'Normal'/);
- assert.match(gate,/RealTimeProtectionEnabled -ne \$true/);
+ assert.match(gate,/PASS_EICAR_DETECTED/);
+ assert.match(gate,/Get-MpThreatDetection/);
+ assert.match(gate,/INCONCLUSIVE: Defender did not detect the benign EICAR positive control/);
  assert.match(gate,/Get-FileHash/);
  assert.match(gate,/DETECTION_OR_QUARANTINE/);
  assert.match(gate,/status = 'BLOCKED'/);
