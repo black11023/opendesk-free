@@ -56,7 +56,7 @@ test('actual Setup EXE: install, upgrade, preserve data, run, uninstall',{timeou
 
   const info=spawnSync('reg.exe',['query',regKey,'/v','DisplayVersion'],{encoding:'utf8',windowsHide:true});
   assert.equal(info.status,0,'per-user Installed Apps registration missing');
-  assert.match(info.stdout,/0\.6\.5-preview\.1/);
+  assert.match(info.stdout,/0\.6\.6-preview\.1/);
   await writeFile(retained,'keep my data','utf8');
   execWithEnv(setup,['--quiet-install'],env); // actual installer upgrade over existing exe
   assert.equal((await readFile(retained,'utf8')),'keep my data');
