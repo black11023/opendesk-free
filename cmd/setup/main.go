@@ -4,7 +4,6 @@ package main
 
 import (
 	"embed"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"unicode/utf16"
 	"unsafe"
 )
 
@@ -118,21 +116,6 @@ func shortcutPath() string {
 	return filepath.Join(appdata, "Microsoft", "Windows", "Start Menu", "Programs", "OpenDesk Free.lnk")
 }
 func quotePS(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
-func runPowershell(script string) error {
-	code := utf16.Encode([]rune(script))
-	raw := make([]byte, len(code)*2)
-	for i, r := range code {
-		raw[i*2] = byte(r)
-		raw[i*2+1] = byte(r >> 8)
-	}
-	encoded := base64.StdEncoding.EncodeToString(raw)
-	cmd := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded)
-	out, e := cmd.CombinedOutput()
-	if e != nil {
-		return fmt.Errorf("PowerShell failed: %w (%s)", e, string(out))
-	}
-	return nil
-}
 func createShortcut(app string) error {
     return createNativeShortcut(app, shortcutPath())
 }
@@ -154,10 +137,12 @@ func uninstall(quiet bool) error {
  self,err:=os.Executable()
  if err==nil {
    script:=`Start-Sleep -Seconds 2; Remove-Item -LiteralPath `+quotePS(self)+` -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath `+quotePS(root)+` -ErrorAction SilentlyContinue`
-   code:=utf16.Encode([]rune(script))
-   raw:=make([]byte,len(code)*2)
-   for i,v:=range code{raw[i*2]=byte(v);raw[i*2+1]=byte(v>>8)}
-   if err=exec.Command("powershell.exe","-NoProfile","-NonInteractive","-WindowStyle","Hidden","-ExecutionPolicy","Bypass","-EncodedCommand",base64.StdEncoding.EncodeToString(raw)).Start();err!=nil{return fmt.Errorf("schedule uninstaller cleanup: %w",err)}
+   // The running uninstaller cannot immediately delete itself on Windows.
+   // This non-encoded, user-scoped command removes only owned application
+   // files after this process exits; it never changes script execution policy.
+   cmd:=exec.Command("powershell.exe","-NoProfile","-NonInteractive","-Command",script)
+   cmd.SysProcAttr=&syscall.SysProcAttr{HideWindow:true}
+   if err=cmd.Start();err!=nil{return fmt.Errorf("schedule uninstaller cleanup: %w",err)}
  }
  if !quiet{dialog("OpenDesk Free","Uninstalled. Output documents were not changed.",mbInformation)}
  return nil
