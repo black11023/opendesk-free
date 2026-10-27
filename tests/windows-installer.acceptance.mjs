@@ -48,6 +48,12 @@ test('actual Setup EXE: install, upgrade, preserve data, run, uninstall',{timeou
   await writeFile(output,'user document must survive','utf8');
   execWithEnv(setup,['--quiet-install'],env);
   for(const file of [app,uninstaller,shortcut])assert.equal(await missing(file),false,'missing: '+file);
+  // A real Windows Shell Link begins with the 76-byte MS-SHLLINK header,
+  // not a text wrapper or a command shell.
+  const linkBytes=await readFile(shortcut);
+  assert.ok(linkBytes.length>=76,'shortcut has no Shell Link header');
+  assert.deepEqual(linkBytes.subarray(0,4),Buffer.from([0x4c,0x00,0x00,0x00]));
+
   const info=spawnSync('reg.exe',['query',regKey,'/v','DisplayVersion'],{encoding:'utf8',windowsHide:true});
   assert.equal(info.status,0,'per-user Installed Apps registration missing');
   assert.match(info.stdout,/0\.6\.5-preview\.1/);
