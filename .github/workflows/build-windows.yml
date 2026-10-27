@@ -31,8 +31,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist -Force | Out-Null
-          go build -trimpath -ldflags '-s -w -H=windowsgui' -o cmd/setup/payload/OpenDeskFree.exe ./cmd/opendesk
-          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.6.5_preview1.exe
+          go build -trimpath -ldflags '-H=windowsgui' -o cmd/setup/payload/OpenDeskFree.exe ./cmd/opendesk
+          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.6.6_preview1.exe
       - name: Run automated tests
         run: go test ./...
       - name: Vet Go source
@@ -42,7 +42,7 @@ jobs:
       - name: Build Windows setup executable
         shell: pwsh
         run: |
-          go build -trimpath -ldflags '-s -w -H=windowsgui' -o dist/OpenDeskFree_Setup_0.6.5_preview1.exe ./cmd/setup
+          go build -trimpath -ldflags '-H=windowsgui' -o dist/OpenDeskFree_Setup_0.6.6_preview1.exe ./cmd/setup
           Copy-Item go.sum dist/go.sum -Force
           Get-FileHash dist/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $(Split-Path -Leaf $_.Path)" } | Out-File dist/SHA256SUMS.txt -Encoding utf8
       - name: Windows Setup installation/upgrade/uninstall acceptance
@@ -50,8 +50,70 @@ jobs:
       - name: Upload installer build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: OpenDeskFree-Windows-v0.6.5_preview1
+          name: OpenDeskFree-Windows-v0.6.6_preview1
           path: dist/*
           if-no-files-found: error
           retention-days: 30
 
+
+  malware-audit:
+    name: Scan exact Windows binaries with fresh ClamAV signatures
+    needs: windows-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the exact EXE files from Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: OpenDeskFree-Windows-v0.6.6_preview1
+          path: dist
+      - name: Check release hashes before scanning
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum --check SHA256SUMS.txt
+          test -s OpenDeskFree_Portable_0.6.6_preview1.exe
+          test -s OpenDeskFree_Setup_0.6.6_preview1.exe
+      - name: Install ClamAV antivirus and fresh database
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clamav clamav-freshclam
+          sudo systemctl stop clamav-freshclam || true
+          sudo freshclam
+          clamscan --version | tee AV_ENGINE.txt
+          test -f /var/lib/clamav/daily.cvd -o -f /var/lib/clamav/daily.cld
+      - name: Prove antivirus works, then scan both release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          # EICAR contains no malware: it verifies that the scanner is actually active.
+          printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > "$RUNNER_TEMP/eicar.com"
+          rc=0
+          clamscan --no-summary "$RUNNER_TEMP/eicar.com" > AV_EICAR.txt || rc=$?
+          if [ "$rc" -ne 1 ] || ! grep -q 'FOUND' AV_EICAR.txt; then
+            echo 'BLOCKED: antivirus did not detect the harmless EICAR positive control'
+            cat AV_EICAR.txt
+            exit 1
+          fi
+          rc=0
+          clamscan --no-summary dist/OpenDeskFree_Portable_0.6.6_preview1.exe dist/OpenDeskFree_Setup_0.6.6_preview1.exe > AV_SCAN.txt || rc=$?
+          cat AV_SCAN.txt
+          if [ "$rc" -ne 0 ]; then
+            echo "BLOCKED: antivirus detection or scan failure (exit $rc)"
+            exit 1
+          fi
+          echo 'PASS: two exact EXE assets scanned with working ClamAV. This is not Google Safe Browsing certification.' | tee AV_RESULT.txt
+      - name: Upload audit logs even when malware scan blocks release
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenDeskFree-AV-Evidence-v0.6.6
+          path: |
+            AV_ENGINE.txt
+            AV_EICAR.txt
+            AV_SCAN.txt
+            AV_RESULT.txt
+          if-no-files-found: warn
+          retention-days: 60

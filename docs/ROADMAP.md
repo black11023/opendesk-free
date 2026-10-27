@@ -107,9 +107,16 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Fixed malformed Markdown feature-table line breaks in README, plus more explicit limits and documentation.
 - Future: Windows real Office/Tesseract child-process exit verification on actual PC and hard memory-budgeting through OS facilities where safe.
 
-### V0.6.5 Preview 1 — zero-cost first-use guidance
+### V0.6.6 Preview 1 — zero-cost first-use guidance
 
 - Implement a compact English/Vietnamese three-step explanation per built-in or optional operation in the existing workbench, with clear output expectations.
 - Restrict normal file-picker extensions, fail early with readable inline warnings for mismatched dropped files. Intentionally preserve invalid inputs for read-only PDF audits and resilient Office batch FAIL reporting.
 - Correct Office batch category filtering; require Chromium acceptance of wrong-extension rejection, language switching, valid-file recovery and proper Office category membership.
 - Next: test with volunteer users on older Windows 10/11 laptops, improve error messages for missing OCR/LibreOffice, and develop a safer optional-dependency installation guide; **do not** bundle or silently download outside binaries.
+
+### V0.6.6 Windows security incident remediation
+
+- Remove nonessential external process launch from Portable startup and use native Win32 APIs.
+- Use COM to write installed .lnk files instead of invoking PowerShell; simplify uninstaller cleanup without encoded commands or bypass settings.
+- Require fresh ClamAV definitions, EICAR positive-control test, SHA matching and scans of both built Windows EXE files on the same CI run. Failing antivirus jobs must block the whole Windows workflow/release.
+- Keep #14 open until the old Chrome-v0.6.3 verdict and new-binary downloads are independently assessed; a passed malware signature scan alone cannot grant reputation.

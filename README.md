@@ -2,13 +2,13 @@
 
 **English · Tiếng Việt** | **No subscription · No account · Offline-first**
 
-> **Security advisory — 2026-10-27 (investigation open):** A Windows user reported Chrome's **"Đã phát hiện thấy vi-rút" / "Virus detected"** block for `OpenDeskFree_Portable_0.6.3_preview1.exe`. No malware/false-positive determination has been made. **Do not bypass Chrome Safe Browsing, disable antivirus, whitelist the EXE, or execute a blocked download.** The newer unsigned Preview binaries are **not yet independently cleared by a verified AV scan**, so please refrain from recommending them as security-certified. Track evidence at [Security issue #14](https://github.com/black11023/opendesk-free/issues/14) and the proposed fail-closed AV gate [PR #15](https://github.com/black11023/opendesk-free/pull/15).
+> **Security advisory — 2026-10-27 (investigation open):** A Windows user reported Chrome's **"Đã phát hiện thấy vi-rút" / "Virus detected"** block for `OpenDeskFree_Portable_0.6.3_preview1.exe`. No malware/false-positive determination has been made. **Do not bypass Chrome Safe Browsing, disable antivirus, whitelist the EXE, or execute a blocked download.** The unsigned Preview binaries are **not certified by browser reputation or an independent multi-vendor scan**, so please refrain from recommending them as security-certified. Track evidence at [Security issue #14](https://github.com/black11023/opendesk-free/issues/14) and the proposed fail-closed AV gate [PR #15](https://github.com/black11023/opendesk-free/pull/15).
 
 ![OpenDesk Free preview](assets/desktop-preview.png)
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.6.5-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.6.6-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
@@ -106,10 +106,18 @@ The built-in **Audit PDF files → CSV** tool inspects up to 50 inputs (40 MB to
 - Chromium CI runs a Linux regression that intentionally starts a shell plus background child, cancels the request, and confirms the child is no longer running. Windows builds compile platform-specific cancellation support; an exhaustive Windows worker-process-tree test remains a future requirement.
 - Fixes the README feature-table formatting so international users can distinguish built-in, optional, planned and directory-only features.
 
-### V0.6.5 Preview 1 — beginner-friendly file selection
+### V0.6.6 Preview 1 — beginner-friendly file selection
 
 - The local workbench now explains each selected operation in **three short steps** in English and Vietnamese, including the output format. Help remains available entirely offline.
 - The file picker filters extensions for built-in text/CSV tools, PDF, image, OCR and optional Office operations. Drag/drop of unsupported extensions shows a clear bilingual warning **before processing** and disables the Process button.
 - **PDF batch audit** and **Office batch → PDF + report** deliberately continue accepting invalid file extensions: their CSV reports include each as a **FAIL**, rather than silently discarding inputs.
 - Fix the Office batch operation appearing under **Files** instead of **Office**.
 - All core conversion semantics and source-preserving behavior are unchanged. This remains an unsigned Preview, not an offline replacement for complete Office applications.
+ 
+### V0.6.6 Candidate — Windows remediation and release safety
+
+- The Portable opens the browser with **native ShellExecuteW**, shows startup errors via **MessageBoxW**, and no longer launches PowerShell or `rundll32.exe` during startup.
+- The Windows Setup creates the Start Menu shortcut through COM `IShellLinkW`/`IPersistFile` without PowerShell script execution. Uninstaller cleanup uses plain, non-encoded PowerShell without changing script execution policy.
+- The two Windows EXE files retain Go debug symbols (no `-s -w` stripping). Go builds remain per-user and offline-first.
+- The Windows CI now includes a **separate Linux ClamAV gate** using current signatures: verified release SHA-256, positive-control EICAR detection, and scans of both Windows files. If definitions or the scan cannot run, **release is blocked**.
+- Antivirus scanning cannot rule out every threat or override a Chrome/Google Safe Browsing block. Unsigned files can still be rejected; do not bypass protection.

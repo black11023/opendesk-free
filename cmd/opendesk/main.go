@@ -14,8 +14,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
-	"os/exec"
 	"runtime"
  "runtime/debug"
 	"strings"
@@ -29,7 +27,7 @@ import (
 //go:embed web/index.html web/catalog.js
 var web embed.FS
 
-const Version = "0.6.5-preview.1"
+const Version = "0.6.6-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.
@@ -260,23 +258,10 @@ func main() {
 		critical(err)
 	}
 }
-func openBrowser(url string) error {
-	switch runtime.GOOS {
-	case "windows":
-		return exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		return exec.Command("open", url).Start()
-	default:
-		return exec.Command("xdg-open", url).Start()
-	}
-}
+func openBrowser(url string) error { return openSystemBrowser(url) }
 func critical(err error) {
-	log.Printf("OpenDesk Free error: %v", err)
-	if runtime.GOOS == "windows" {
-		_ = exec.Command("powershell.exe", "-NoProfile", "-Command", `Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('OpenDesk Free could not start. See the developer documentation.','OpenDesk Free')`).Run()
-	} else {
-		fmt.Fprintln(os.Stderr, err)
-	}
+    log.Printf("OpenDesk Free error: %v",err)
+    showStartupError(err)
 }
 
 func localized(r *http.Request, en, vi string) string {if r.Header.Get("X-OpenDesk-Lang")=="vi" {return vi};return en}
