@@ -30,5 +30,5 @@ test('native image PDF is offered in both locales',()=>{
  assert.match(html,/data-op="images-pdf"/);
  assert.match(html,/data-en="Images → PDF"/);
  assert.match(html,/data-vi="Ảnh → PDF"/);
- assert.match(html,/\.png,\.jpg,\.jpeg/);
+ assert.match(html,/if\(op==='ocr-images'\|\|op==='images-pdf'\)return \['\.png','\.jpg','\.jpeg'\]/);
 });
