@@ -2,6 +2,8 @@
 
 **English · Tiếng Việt** | **No subscription · No account · Offline-first**
 
+> **Security advisory — 2026-10-27 (investigation open):** A Windows user reported Chrome's **"Đã phát hiện thấy vi-rút" / "Virus detected"** block for `OpenDeskFree_Portable_0.6.3_preview1.exe`. No malware/false-positive determination has been made. **Do not bypass Chrome Safe Browsing, disable antivirus, whitelist the EXE, or execute a blocked download.** The newer unsigned Preview binaries are **not yet independently cleared by a verified AV scan**, so please refrain from recommending them as security-certified. Track evidence at [Security issue #14](https://github.com/black11023/opendesk-free/issues/14) and the proposed fail-closed AV gate [PR #15](https://github.com/black11023/opendesk-free/pull/15).
+
 ![OpenDesk Free preview](assets/desktop-preview.png)
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
