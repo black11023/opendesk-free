@@ -77,3 +77,44 @@ func TestDOCXMissingModelFailsAndNoPartialOutput(t *testing.T){
  if _,e:=TranslateDOCX(context.Background(),[]engine.Input{{Name:"a.docx",Data:f}},"auto","vi",fakeTranslator{});e==nil{t.Fatal("unsupported auto source accepted")}
  if _,e:=TranslateDOCX(context.Background(),[]engine.Input{{Name:"a.docx",Data:f}},"en","en",fakeTranslator{});e==nil{t.Fatal("same source/dest accepted")}
 }
+
+func TestDOCXBlocksNonTextElementsAndFakeXMLTags(t *testing.T){
+ cases:=[]struct{name,paragraph string;extras map[string]string}{
+  {"xml-comment",`<!--<w:p><w:r><w:t>Ghost</w:t></w:r></w:p>--><w:p><w:r><w:t>Hello world</w:t></w:r></w:p>`,nil},
+  {"xml-cdata",`<![CDATA[<w:p>fake</w:p>]]><w:p><w:r><w:t>Hello</w:t></w:r></w:p>`,nil},
+  {"bookmark",`<w:p><w:bookmarkStart w:id="7" w:name="x"/><w:r><w:t>Hello</w:t></w:r></w:p>`,nil},
+  {"form-control",`<w:p><w:sdt><w:sdtContent><w:r><w:t>Hello</w:t></w:r></w:sdtContent></w:sdt></w:p>`,nil},
+  {"tab",`<w:p><w:r><w:t>Hello</w:t><w:tab/></w:r></w:p>`,nil},
+  {"custom-xml",`<w:p><w:r><w:t>Hello</w:t></w:r></w:p>`,map[string]string{"customXml/item1.xml":"<data>Contract value</data>"}},
+ }
+ for _,tt:=range cases{
+   t.Run(tt.name,func(t *testing.T){
+     original:=docxFixture(t,tt.paragraph,tt.extras)
+     result,err:=TranslateDOCX(context.Background(),[]engine.Input{{Name:"document.docx",Data:original}},"en","vi",fakeTranslator{})
+     if err==nil||len(result.Data)!=0||!strings.Contains(err.Error(),"BLOCKED"){
+       t.Fatalf("unsafe %s was not blocked without output: %v",tt.name,err)
+     }
+   })
+ }
+}
+func TestDOCXBlocksCorruptUnusedMediaPart(t *testing.T){
+ // Deliberately damage a stored media entry so its CRC no longer matches.
+ // An unchanged binary file must not be silently copied into a translated DOCX.
+ var out bytes.Buffer
+ zw:=zip.NewWriter(&out)
+ create:=func(name,text string,method uint16){
+   w,e:=zw.CreateHeader(&zip.FileHeader{Name:name,Method:method});if e!=nil{t.Fatal(e)}
+   if _,e=w.Write([]byte(text));e!=nil{t.Fatal(e)}
+ }
+ create("[Content_Types].xml","<Types/>",zip.Deflate)
+ create("word/document.xml",`<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Hello</w:t></w:r></w:p></w:body></w:document>`,zip.Deflate)
+ create("word/media/extra.bin","UNUSED_MEDIA_BYTES_ORIGINAL",zip.Store)
+ if e:=zw.Close();e!=nil{t.Fatal(e)}
+ blob:=out.Bytes()
+ at:=bytes.Index(blob,[]byte("UNUSED_MEDIA_BYTES_ORIGINAL"))
+ if at<0{t.Fatal("stored media not found")}
+ damaged:=append([]byte(nil),blob...)
+ damaged[at+8]='X'
+ result,err:=TranslateDOCX(context.Background(),[]engine.Input{{Name:"document.docx",Data:damaged}},"en","vi",fakeTranslator{})
+ if err==nil||len(result.Data)!=0||!strings.Contains(err.Error(),"BLOCKED"){t.Fatalf("corrupt media not blocked: %v",err)}
+}
