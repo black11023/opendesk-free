@@ -51,15 +51,51 @@ jobs:
           python-version: '3.12'
       - name: Install free offline Argos inference engine
         run: python -m pip install --disable-pip-version-check 'argostranslate==1.9.6'
-      - name: Download official EN to ES direct test model with bounded retries
+      - name: Download actual EN to ES test model with resumable transfers
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --location --retry 2 --retry-delay 2 --retry-all-errors --connect-timeout 12 --max-time 180             'https://argos-net.com/v1/translate-en_es-1_0.argosmodel' -o "$RUNNER_TEMP/en_es.argosmodel"
-          test "$(stat -c%s "$RUNNER_TEMP/en_es.argosmodel")" -gt 1000000
-          test "$(stat -c%s "$RUNNER_TEMP/en_es.argosmodel")" -lt 200000000
-          sha256sum "$RUNNER_TEMP/en_es.argosmodel"
-          echo "ARGOS_TEST_MODEL=$RUNNER_TEMP/en_es.argosmodel" >> "$GITHUB_ENV"
+          # The official file is ~87.5 MB and has been as slow as 140 kB/s.
+          # Resume a partial download instead of restarting it each time.
+          # Model is only installed on the isolated CI runner (not shipped to users).
+          path="$RUNNER_TEMP/en_es.argosmodel"
+          url='https://argos-net.com/v1/translate-en_es-1_0.argosmodel'
+          expected_size=87503191
+          for attempt in 1 2 3; do
+            echo "Official Argos model transfer attempt $attempt/3"
+            if curl --fail --location --show-error --silent --continue-at - \
+              --connect-timeout 20 --max-time 720 --speed-time 90 --speed-limit 16384 \
+              "$url" -o "$path"; then
+              break
+            fi
+            if [[ "$attempt" == 3 ]]; then
+              echo "::error::Official Argos model download unavailable after resumable attempts"
+              exit 1
+            fi
+            sleep 3
+          done
+          actual_size="$(stat -c%s "$path")"
+          if [[ "$actual_size" -ne "$expected_size" ]]; then
+            echo "::error::Argos test model incomplete or changed: $actual_size bytes, expected $expected_size"
+            exit 1
+          fi
+          # Digest is recorded as evidence, not yet claimed to be independently pinned.
+          sha256sum "$path"
+          python - "$path" <<'PY'
+          import sys,zipfile,json
+          path=sys.argv[1]
+          with zipfile.ZipFile(path) as z:
+              bad=z.testzip()
+              assert bad is None, f"Corrupt archive: {bad}"
+              assert len(z.namelist()) < 300, "Unexpected archive part count"
+              names=set(z.namelist())
+              meta_name=next((x for x in names if x.endswith("metadata.json")),None)
+              assert meta_name, "Missing Argos package metadata"
+              meta=json.loads(z.read(meta_name))
+              assert meta.get("from_code")=="en" and meta.get("to_code")=="es", "Incorrect model language pair"
+              print("Real Argos package ZIP structure and language metadata checked")
+          PY
+          echo "ARGOS_TEST_MODEL=$path" >> "$GITHUB_ENV"
       - name: Install and verify isolated direct Argos language model
         shell: bash
         run: |
