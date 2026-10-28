@@ -104,6 +104,13 @@ func main() {
  // Optional external renderers (LibreOffice, Tesseract, OCRmyPDF) share
  // one slot so multiple subprocess-heavy jobs never overlap in this app.
  externalGate := newProcessGate(1)
+\tmux.HandleFunc("GET /translate-status",func(w http.ResponseWriter,r *http.Request){
+  if !auth(w,r){return}
+  w.Header().Set("Content-Type","application/json; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _=json.NewEncoder(w).Encode(preservetranslate.ProbeArgos(r.Context()))
+ })
 	mux.HandleFunc("GET /ocr-status",func(w http.ResponseWriter,r *http.Request){
   if !auth(w,r){return}
   w.Header().Set("Content-Type","application/json; charset=utf-8")
@@ -164,7 +171,7 @@ func main() {
           combined+=header.Size
         }
 		op := r.FormValue("operation")
-        if isExternalOperation(op){
+        if isExternalOperation(op)||op=="translate-docx"{
           if !externalGate.TryEnter(){
             w.Header().Set("Retry-After","3")
             http.Error(w,localized(r,
@@ -207,7 +214,11 @@ func main() {
 		}
 		var result engine.Result
         var e error
-        if op=="formguard-audit"{
+        if op=="translate-docx"{
+           ctx,cancel:=context.WithTimeout(r.Context(),3*time.Minute)
+           defer cancel()
+           result,e=preservetranslate.TranslateDOCX(ctx,files,r.FormValue("source_lang"),r.FormValue("target_lang"),preservetranslate.ArgosProvider{})
+         }else if op=="formguard-audit"{
            result,e=preservetranslate.Preflight(r.Context(),files)
          }else if op=="office-pdf-batch"{
           ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
