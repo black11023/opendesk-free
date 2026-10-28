@@ -81,7 +81,9 @@ jobs:
             echo "English screenshot already current; no commit necessary."
             exit 0
           fi
-          git commit -m "docs(screenshot): update README image from tested English Chromium UI [skip ci]"
+          # Do not use [skip ci]: main HEAD must receive its own three
+          # release gates after a screenshot-only commit changes its SHA.
+          git commit -m "docs(screenshot): refresh verified English Chromium image"
           if git push origin HEAD:main; then
             echo "README screenshot updated on main."
           else

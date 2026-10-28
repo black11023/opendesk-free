@@ -21,3 +21,10 @@ test('multiple runs for exact SHA use newest one; older success cannot mask newe
  assert.match(release,/\$count" -lt 1/);
  assert.doesNotMatch(release,/\$count" -ne 1/);
 });
+
+test('screenshot refresh never bypasses release CI',()=>{
+ const screenshot=fs.readFileSync('.github/workflows/refresh-readme-preview.yml','utf8');
+ assert.match(screenshot,/git commit -m "docs\(screenshot\): refresh verified English Chromium image"/);
+ assert.doesNotMatch(screenshot,/git commit -m[^\n]*\[skip ci\]/);
+ assert.match(screenshot,/git diff --cached --quiet/);
+});
