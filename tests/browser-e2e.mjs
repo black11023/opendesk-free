@@ -50,6 +50,13 @@ try{
  assert.equal(await page.locator('#ocr-options').isVisible(),true);
  await page.locator('.operation[data-op="translate-docx"]').click();
  assert.equal(await page.locator('#translate-options').isVisible(),true);
+ await page.waitForFunction(()=>document.querySelector('#model-pack-details').textContent.includes('SHA-256:'),null,{timeout:12000});
+ assert.equal(await page.locator('#model-pack-select option').count(),1);
+ assert.match(await page.locator('#model-pack-details').innerText(),/SHA-256:/);
+ assert.equal(await page.locator('#model-download').isDisabled(),true,'absent inference engine must block installation');
+ assert.equal(await page.locator('#model-install-file').isDisabled(),true);
+ assert.equal(await page.locator('#model-cancel').isHidden(),true);
+
  await page.locator('#translate-status').waitFor({state:'visible'});
  assert.equal(await page.locator('#process').isDisabled(),true,'translator must fail closed when model not installed');
  await page.locator('#lang').selectOption('en');

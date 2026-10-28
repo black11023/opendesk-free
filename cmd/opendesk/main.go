@@ -28,7 +28,7 @@ import (
 //go:embed web/index.html
 var web embed.FS
 
-const Version = "0.6.8-preview.1"
+const Version = "0.6.9-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.
@@ -104,6 +104,51 @@ func main() {
  // Optional external renderers (LibreOffice, Tesseract, OCRmyPDF) share
  // one slot so multiple subprocess-heavy jobs never overlap in this app.
  externalGate := newProcessGate(1)
+	mux.HandleFunc("GET /model-packs",func(w http.ResponseWriter,r *http.Request){
+  if !auth(w,r){return}
+  w.Header().Set("Content-Type","application/json; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _=json.NewEncoder(w).Encode(preservetranslate.ApprovedPacks())
+ })
+ mux.HandleFunc("POST /model-packs/install",func(w http.ResponseWriter,r *http.Request){
+  if !auth(w,r){return}
+  if !processGate.TryEnter(){http.Error(w,"Another task is running",http.StatusTooManyRequests);return}
+  defer processGate.Leave()
+  if !externalGate.TryEnter(){http.Error(w,"A local document engine is busy",http.StatusTooManyRequests);return}
+  defer externalGate.Leave()
+  // Uploads are streamed into a temporary file, never entirely buffered in
+  // memory. No model is installed until SHA-256 + ZIP/metadata checks pass.
+  r.Body=http.MaxBytesReader(w,r.Body,96<<20)
+  if e:=r.ParseMultipartForm(1<<20);e!=nil{
+   http.Error(w,"Invalid or oversized model request",http.StatusRequestEntityTooLarge);return
+  }
+  if r.MultipartForm!=nil{defer r.MultipartForm.RemoveAll()}
+  id,mode:=r.FormValue("model_id"),r.FormValue("mode")
+  ctx,cancel:=context.WithTimeout(r.Context(),14*time.Minute);defer cancel()
+  var receipt preservetranslate.PackReceipt
+  var err error
+  switch mode {
+  case "download":
+   if len(r.MultipartForm.File)!=0{http.Error(w,"Unexpected uploaded file",400);return}
+   receipt,err=preservetranslate.DownloadApprovedModel(ctx,id)
+  case "import":
+   upload,header,e:=r.FormFile("model_file")
+   if e!=nil{http.Error(w,"Select one verified .argosmodel file",400);return}
+   defer upload.Close()
+   if header.Size>96<<20||header.Size<0{http.Error(w,"Unsupported model size",413);return}
+   receipt,err=preservetranslate.InstallApprovedModel(ctx,id,upload)
+  default:
+   http.Error(w,"Invalid model installation mode",400);return
+  }
+  if err!=nil{
+   http.Error(w,"Model installation BLOCKED: "+err.Error(),http.StatusUnprocessableEntity);return
+  }
+  w.Header().Set("Content-Type","application/json; charset=utf-8")
+  w.Header().Set("Cache-Control","no-store")
+  w.Header().Set("X-Content-Type-Options","nosniff")
+  _=json.NewEncoder(w).Encode(receipt)
+ })
 	mux.HandleFunc("GET /translate-status",func(w http.ResponseWriter,r *http.Request){
   if !auth(w,r){return}
   w.Header().Set("Content-Type","application/json; charset=utf-8")
