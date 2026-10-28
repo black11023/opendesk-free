@@ -5,7 +5,6 @@ package preservetranslate
 // the exact archive is verified against an immutable SHA-256 allowlist first.
 import (
  "archive/zip"
- "bytes"
  "context"
  "crypto/sha256"
  "crypto/subtle"
