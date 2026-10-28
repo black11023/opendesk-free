@@ -60,6 +60,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils
+      - name: Generate the same LibreOffice-tested XLSX fixture used by Office integration
+        run: python tests/generate_real_fixtures.py --xlsx-only
       - name: Restore official model cache (verified by SHA-256 below)
         uses: actions/cache@v4
         with:

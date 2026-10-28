@@ -75,7 +75,7 @@ Windows Setup also builds from `./cmd/setup`. See [Windows CI](.github/workflows
 
 See [offline translation setup](docs/ARGOS_OFFLINE_TRANSLATION.md).
 
-### V0.7.0 Preview — verified local language-pack installer (partial #29)
+### V0.6.9 Preview — verified local language-pack installer (partial #29)
 
 - English/Vietnamese settings now display a strictly approved direct **English→Spanish Argos model v1.0** (87,503,191 bytes), its vendor URL and pinned SHA-256. User consent and explicit button are required before any network access.
 - Two real workflows: **Download & install** the exact approved model or **Verify & import** an existing offline `.argosmodel`. Both use the same signed-off digest, safe ZIP inspection, archive/path/size checks, metadata language match and actual post-install Argos translation probe.
