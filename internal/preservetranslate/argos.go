@@ -48,7 +48,10 @@ try:
         a=next((l for l in languages if l.code==source),None)
         b=next((l for l in languages if l.code==target),None)
         if a is None or b is None:raise RuntimeError("Installed model languages not initialized")
-        direct=next((x for x in a.translations if x.to_lang.code==target),None)
+        # Only choose an installed direct package, checked above. Argos
+        # Language.get_translation() is its stable public API; some versions
+        # do not expose a Language.translations attribute.
+        direct=a.get_translation(b)
         if direct is None:raise RuntimeError("No direct translation model")
         segments=req.get("segments")
         if not isinstance(segments,list) or len(segments)>600:
