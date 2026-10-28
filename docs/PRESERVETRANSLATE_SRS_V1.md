@@ -33,18 +33,18 @@ Reference capabilities already available: DeepL file translation, Microsoft Tran
 ## 4. Translation backend (pluggable, not bundled without a legal/security review)
 - Keep existing Go 1.26 loopback-only app and CSRF/Host/Origin protections as the only UI/HTTP gateway.
 - Parse/patch DOCX/XLSX/PPTX OOXML in Go, with a package-map/anchor preservation layer and independent no-change oracle.
-- Optional local engine adapter: Argos Translate (Python, MIT/CC0 library; independently validate each language-model package license) or another tested license-compatible engine. Official index includes en->vi and vi->en packages. First supported pair **English ↔ Vietnamese**, with English/Chinese/Japanese/Korean/French after model/fixture acceptance. Adding models does not change the base EXE or require admin privileges.
+- Optional local engine adapter: Argos Translate (Python, MIT/CC0 library; independently validate each language-model package license) or another tested license-compatible engine. Official index includes en->vi and vi->en packages. **Multilingual is P0 from G1, not a G5 afterthought**: language selection and route planning are extensible from day one; begin real provider acceptance with English↔Vietnamese and other verified pairs (e.g. English↔French/Japanese) but do not hardcode the architecture to two languages. Candidate language catalog is not a promise of installed translation models. Adding models does not change the base EXE or require admin privileges.
 - Prefer local subprocess started using fixed allowlisted args and isolated temporary folders, timeout/cancel and process-tree kill; don't use shell command construction or external translation sites.
 - Optional device acceleration after CPU baseline verified. RAM/performance targets must be measured on actual low-end Windows PCs before publication. No invented SLA or language quality scores.
 - Avoid shipping Meta NLLB-200 model by default: its model card license is CC-BY-NC-4.0 and the free-for-everyone project's lawful downstream uses should not be restricted by accident. Don't bundle AGPL LibreTranslate server in MIT package without obligations review.
 
 ## 5. Phased delivery and scope
 - **G0 / foundational prototype (FIRST):** test-driven numeric/identifier placeholder protection `internal/preservetranslate`, with fail-closed restore; OOXML inventory/readiness plan; documentation, no UI "translated" badge.
-- **G1 / first real translator:** DOCX English<->Vietnamese; offline Argos optional engine; preserve OOXML structures; glossary, compare text, audit and failure diagnostics.
+- **G1 / first real translator:** DOCX multilingual-capable adapter and UI from the start; initial accepted real offline language-model pairs include English↔Vietnamese then separately tested pairs; support multi-target batch and explicit consent for pivot; preserve OOXML structures, glossary, compare text, audit and failure diagnostics.
 - **G2 / XLSX:** per-sheet/range selection; rich/shared strings; strict formula/numeric/merged/style/print rules; specialized Excel audit. Do not modify `.xlsm` or encrypted workbooks.
 - **G3 / PPTX:** slide shape text/notes where proven; layout overflow check; original slide count.
 - **G4 / PDFs:** selectable text first; scan/OCR later; page visual diff, font/overflow warnings; signed documents get a separate, explicitly unofficial translation.
-- **G5 / multi-language & batch:** glossary/translation-memory packs, optional language additions, bulk tasks and resumable jobs.
+- **G5 / scale-out:** more verified offline model packs, glossary/translation memory, larger bulk tasks and resumable jobs; multilingual planning is already required at G0/G1.
 - Existing basic PDF tools remain available but are demoted from product differentiation; do not delete features without explicit approval.
 
 ## 6. Acceptance matrix (must be automated and manually reproducible)
@@ -76,3 +76,7 @@ Reference capabilities already available: DeepL file translation, Microsoft Tran
 - Argos model catalog (en_vi/vi_en): https://data.argosopentech.com/argospm/v1/
 - NLLB model license (not default): https://huggingface.co/facebook/nllb-200-distilled-600M
 - LibreOffice import/export fidelity warning: https://help.libreoffice.org/latest/en-GB/text/shared/guide/ms_import_export_limitations.html
+
+## 9. Multi-language architecture and acceptance (28/10/2026)
+
+The user explicitly requires **multiple source/target languages** across all document formats. The working contract is detailed in [MULTILINGUAL_SPEC_V1.md](MULTILINGUAL_SPEC_V1.md). G0 adds 46 candidate language labels and model-verified route planners, up to 16 destination copies, optional human-consented one-hop pivot, and mixed-source segments. **No installed models, language auto-detection, UI translation, or actual file translation are implied by these planning primitives.**
