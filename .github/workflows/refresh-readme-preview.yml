@@ -81,16 +81,13 @@ jobs:
             echo "English screenshot already current; no commit necessary."
             exit 0
           fi
-          # Do not use [skip ci]: main HEAD must receive its own three
-          # release gates after a screenshot-only commit changes its SHA.
+          # A GITHUB_TOKEN push does not trigger new push-workflow gates.
+          # Never advance main from workflow_run: release gates are locked to
+          # the exact tested main HEAD, so updating main here would deadlock.
+          # Instead propose the real Chromium PNG for normal PR review/merge.
           git commit -m "docs(screenshot): refresh verified English Chromium image"
-          if git push origin HEAD:main; then
-            echo "README screenshot updated on main."
-          else
-            echo "Direct push blocked; publishing an auditable screenshot pull request."
-            b="docs/verified-english-screenshot-${SOURCE_SHA:0:12}"
-            git push origin HEAD:"$b"
-            gh pr create -R "$REPO" --base main --head "$b" \
-              --title "docs: real latest English UI screenshot" \
-              --body "Automatically captured from successful main Chromium run at commit $SOURCE_SHA. Contains only assets/desktop-preview.png; no simulated/AI-generated UI."
-          fi
+          b="docs/verified-english-screenshot-${SOURCE_SHA:0:12}"
+          git push origin HEAD:"$b"
+          gh pr create -R "$REPO" --base main --head "$b" \
+            --title "docs: real latest English UI screenshot" \
+            --body "Automatically captured from successful main Chromium run at commit $SOURCE_SHA. Contains only assets/desktop-preview.png; main remains untouched until this screenshot PR is merged and push CI runs."
