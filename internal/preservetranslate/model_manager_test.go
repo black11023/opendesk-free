@@ -33,6 +33,21 @@ func TestVerifiedLanguagePackStrictChecks(t *testing.T){
  meta:=`{"from_code":"en","to_code":"es","package_version":"1.0"}`
  valid,p:=makeTestPack(t,meta,nil);defer valid.Close()
  if err:=ValidateApprovedModel(valid,p);err!=nil{t.Fatalf("valid pack should pass: %v",err)}
+ // Official model ZIP has nested metadata.json (verified in real CI).
+ nested,pn:=makeTestPack(t,meta,map[string]string{"translate-en_es-1_0/metadata.json":meta})
+ defer nested.Close()
+ if err:=ValidateApprovedModel(nested,pn);err==nil{t.Fatal("more than one metadata file accepted")}
+ var single bytes.Buffer
+ zw:=zip.NewWriter(&single)
+ for _,it:=range []struct{k,v string}{{"translate-en_es-1_0/metadata.json",meta},{"translate-en_es-1_0/model/test.bin","model bytes"}}{
+  w,e:=zw.Create(it.k);if e!=nil{t.Fatal(e)};if _,e=w.Write([]byte(it.v));e!=nil{t.Fatal(e)}
+ }
+ if e:=zw.Close();e!=nil{t.Fatal(e)}
+ f2,e:=os.CreateTemp(t.TempDir(),"nested-*.argosmodel");if e!=nil{t.Fatal(e)};defer f2.Close()
+ if _,e=f2.Write(single.Bytes());e!=nil{t.Fatal(e)}
+ digest:=sha256.Sum256(single.Bytes())
+ nestedPack:=ApprovedPack{Source:"en",Target:"es",Size:int64(single.Len()),SHA256:hex.EncodeToString(digest[:])}
+ if e:=ValidateApprovedModel(f2,nestedPack);e!=nil{t.Fatalf("single nested official metadata must pass: %v",e)}
  bad:=p;bad.SHA256=strings.Repeat("0",64)
  if err:=ValidateApprovedModel(valid,bad);err==nil||!strings.Contains(err.Error(),"SHA-256"){t.Fatalf("tampered digest accepted: %v",err)}
  bad=p;bad.Size++
