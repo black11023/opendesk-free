@@ -24,7 +24,7 @@ const maxDocxBytes=12<<20
 const maxDocxParagraphs=600
 var pRE=regexp.MustCompile(`(?s)<w:p(?:\s[^>]*)?>.*?</w:p>`)
 var tRE=regexp.MustCompile(`(?s)<w:t(?:\s[^>]*)?>(.*?)</w:t>`)
-var unsupportedMarkup=regexp.MustCompile(`<w:(?:instrText|fldChar|fldSimple|sdt|hyperlink|ins|del|drawing|object|altChunk|tab|br|commentRangeStart|bookmarkStart)(?:\s|/|>)`)
+var unsupportedMarkup=regexp.MustCompile(`<w:(?:instrText|fldChar|fldSimple|sdt|hyperlink|ins|del|drawing|object|altChunk|tab|br|cr|sym|pict|customXml|smartTag|delText|bookmarkStart|bookmarkEnd|commentRangeStart|commentRangeEnd|commentReference|footnoteReference|endnoteReference|moveTo|moveFrom|proofErr|softHyphen|noBreakHyphen|permStart|permEnd)(?:\s|/|>)`)
 type wordSegment struct { Index, Start, End int; Old string }
 func checkXML(data []byte)error{
  d:=xml.NewDecoder(bytes.NewReader(data))
@@ -32,6 +32,11 @@ func checkXML(data []byte)error{
 }
 func wordSegments(data []byte)([]wordSegment,error){
  if !bytes.Contains(data,[]byte("xmlns:w=")){return nil,errors.New("unsupported Word XML prefix")}
+ // Regex locators are intentionally allowed only for plain OOXML; do not
+ // match fake w:p/w:t tags hidden in comments, CDATA or alternate payloads.
+ for _,unsafe:=range [][]byte{[]byte("<!--"),[]byte("<![CDATA["),[]byte("<!DOCTYPE"),[]byte("<!ENTITY"),[]byte("<mc:AlternateContent")}{
+   if bytes.Contains(data,unsafe){return nil,errors.New("BLOCKED: XML comments/alternate content need a structural editor")}
+ }
  if e:=checkXML(data);e!=nil{return nil,e}
  if unsupportedMarkup.Match(data){return nil,errors.New("BLOCKED: document has fields, revisions, links, complex drawings or breaks")}
  paragraphs:=pRE.FindAllIndex(data,-1)
@@ -72,9 +77,16 @@ func TranslateDOCX(ctx context.Context,files []engine.Input,from,to string,provi
  var original []byte
  for _,part:=range z.File {
    low:=strings.ToLower(part.Name)
-   if strings.HasPrefix(low,"word/header")||strings.HasPrefix(low,"word/footer")||strings.HasPrefix(low,"word/footnotes")||strings.HasPrefix(low,"word/endnotes"){
+   if strings.HasPrefix(low,"word/header")||strings.HasPrefix(low,"word/footer")||strings.HasPrefix(low,"word/footnotes")||strings.HasPrefix(low,"word/endnotes")||strings.HasPrefix(low,"customxml/")||strings.HasPrefix(low,"word/glossary/"){
      return engine.Result{},fmt.Errorf("BLOCKED: unsupported text-bearing part %s",part.Name)
    }
+   // Test CRC and deflate integrity of ALL Office parts, not only XML.
+   // A corrupt picture/media part otherwise survives zip.Copy unnoticed.
+   rr,openErr:=part.Open()
+   if openErr!=nil{return engine.Result{},fmt.Errorf("BLOCKED: invalid package part %s: %w",part.Name,openErr)}
+   n,copyErr:=io.Copy(io.Discard,io.LimitReader(rr,maxPartBytes+1))
+   closeErr:=rr.Close()
+   if copyErr!=nil||closeErr!=nil||n>maxPartBytes{return engine.Result{},fmt.Errorf("BLOCKED: corrupt or oversized Office part %s",part.Name)}
    if low=="word/document.xml"{
      r,err:=part.Open();if err!=nil{return engine.Result{},err}
      original,err=io.ReadAll(io.LimitReader(r,maxPartBytes+1));r.Close()
