@@ -21,7 +21,7 @@ test('locale persists, readable controls retain two translations',()=>{
  assert.match(html,/opendesk-free-language/);
  const all=[...html.matchAll(/data-(?:en|vi)="[^"]+"/g)];
  assert.ok(all.length>=14);
- for(const op of ['formguard-audit','ocr-images','ocr-pdf'])assert.match(html,new RegExp('data-op="'+op+'"'));
+ for(const op of ['formguard-audit','translate-docx','ocr-images','ocr-pdf'])assert.match(html,new RegExp('data-op="'+op+'"'));
  assert.match(html,/data-vi="FormGuard — Kiểm tra biểu mẫu"/);
  assert.match(html,/data-en="FormGuard — Document preflight"/);
 });
