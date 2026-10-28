@@ -120,3 +120,9 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Use COM to write installed .lnk files instead of invoking PowerShell; simplify uninstaller cleanup without encoded commands or bypass settings.
 - Require fresh ClamAV definitions, EICAR positive-control test, SHA matching and scans of both built Windows EXE files on the same CI run. Failing antivirus jobs must block the whole Windows workflow/release.
 - Keep #14 open until the old Chrome-v0.6.3 verdict and new-binary downloads are independently assessed; a passed malware signature scan alone cannot grant reputation.
+
+### PreserveTranslate multilingual G0 — 28/10/2026
+
+- Multilingual is a **core requirement** of G1, not a future G5 enhancement. 46 potential language tags, dynamic verified model routes, up to 16 targets, mixed-language source planning, separate output per destination, fail-closed if any model/route is unavailable.
+- Human-approved pivot via English can lower quality; all formulas, amounts, codes and templates remain protected by FormGuard and later per-format invariants.
+- Code in `internal/preservetranslate/languages.go` is only G0 **planning**, not an end-user translation engine; see `docs/MULTILINGUAL_SPEC_V1.md`. No language-pack downloads or cloud upload.
