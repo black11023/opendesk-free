@@ -51,18 +51,23 @@ jobs:
           python-version: '3.12'
       - name: Install free offline Argos inference engine
         run: python -m pip install --disable-pip-version-check 'argostranslate==1.9.6'
-      - name: Install a real direct EN to ES offline test model
+      - name: Download official EN to ES direct test model with bounded retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --retry-delay 2 --retry-all-errors --connect-timeout 12 --max-time 180             'https://argos-net.com/v1/translate-en_es-1_0.argosmodel' -o "$RUNNER_TEMP/en_es.argosmodel"
+          test "$(stat -c%s "$RUNNER_TEMP/en_es.argosmodel")" -gt 1000000
+          test "$(stat -c%s "$RUNNER_TEMP/en_es.argosmodel")" -lt 200000000
+          sha256sum "$RUNNER_TEMP/en_es.argosmodel"
+          echo "ARGOS_TEST_MODEL=$RUNNER_TEMP/en_es.argosmodel" >> "$GITHUB_ENV"
+      - name: Install and verify isolated direct Argos language model
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
+          import os
           import argostranslate.package as package
-          package.update_package_index()
-          available=package.get_available_packages()
-          direct=next((x for x in available if x.from_code=="en" and x.to_code=="es"),None)
-          if direct is None:raise RuntimeError("No direct English->Spanish Argos model published")
-          path=direct.download()
-          package.install_from_path(path)
+          package.install_from_path(os.environ["ARGOS_TEST_MODEL"])
           installed=package.get_installed_packages()
           assert any(x.from_code=="en" and x.to_code=="es" for x in installed),"Model install verification failed"
           print("Direct offline EN->ES model installed in isolated CI runner")
