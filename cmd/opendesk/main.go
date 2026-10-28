@@ -104,7 +104,7 @@ func main() {
  // Optional external renderers (LibreOffice, Tesseract, OCRmyPDF) share
  // one slot so multiple subprocess-heavy jobs never overlap in this app.
  externalGate := newProcessGate(1)
-\tmux.HandleFunc("GET /translate-status",func(w http.ResponseWriter,r *http.Request){
+	mux.HandleFunc("GET /translate-status",func(w http.ResponseWriter,r *http.Request){
   if !auth(w,r){return}
   w.Header().Set("Content-Type","application/json; charset=utf-8")
   w.Header().Set("Cache-Control","no-store")
