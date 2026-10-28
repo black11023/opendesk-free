@@ -17,7 +17,6 @@ import (
  "net/http"
  "net/url"
  "os"
- "os/exec"
  "path"
  "strings"
  "time"
@@ -130,6 +129,7 @@ func verifiedHTTPClient()*http.Client{
 }
 func DownloadApprovedModel(ctx context.Context,id string)(PackReceipt,error){
  p,err:=findApproved(id);if err!=nil{return PackReceipt{},err}
+ if !ProbeArgos(ctx).Installed{return PackReceipt{},errors.New("Python + Argos runtime missing; model download cannot be installed yet")}
  u,err:=url.Parse(p.URL);if err!=nil||!trustedModelURL(u){return PackReceipt{},errors.New("unapproved model download URL")}
  req,err:=http.NewRequestWithContext(ctx,http.MethodGet,p.URL,nil);if err!=nil{return PackReceipt{},err}
  resp,err:=verifiedHTTPClient().Do(req);if err!=nil{return PackReceipt{},err}
@@ -140,10 +140,12 @@ func DownloadApprovedModel(ctx context.Context,id string)(PackReceipt,error){
 }
 func InstallApprovedModel(ctx context.Context,id string,data io.Reader)(PackReceipt,error){
  p,err:=findApproved(id);if err!=nil{return PackReceipt{},err}
- if _,err=FindArgosPython();err!=nil{return PackReceipt{},errors.New("Argos Translate runtime not available; use the optional offline runtime setup guide before installing models")}
+ if !ProbeArgos(ctx).Installed{return PackReceipt{},errors.New("Argos Translate runtime not ready; install the optional Python engine before selecting model packages")}
  f,err:=stageApproved(ctx,p,data);if err!=nil{return PackReceipt{},err}
- defer func(){f.Close();os.Remove(f.Name())}()
- result,err:=installWithArgos(ctx,f.Name(),p)
+ name:=f.Name()
+ defer os.Remove(name)
+ if err=f.Close();err!=nil{return PackReceipt{},err}
+ result,err:=installWithArgos(ctx,name,p)
  if err!=nil{return PackReceipt{},err}
  return PackReceipt{Status:"READY",ID:p.ID,SHA256:p.SHA256,Pair:p.Source+"->"+p.Target,Detail:result},nil
 }
@@ -175,9 +177,9 @@ except Exception as ex:
  sys.exit(1)
 `
  cmd:=procrun.Command(step,python,"-I","-c",script,modelFile,p.Source,p.Target)
- var output bytes.Buffer
+ output:=&boundedBuffer{Max:8<<10}
  stderr:=&boundedBuffer{Max:8<<10}
- cmd.Stdout=&output
+ cmd.Stdout=output
  cmd.Stderr=stderr
  if err=cmd.Run();err!=nil{
   if step.Err()!=nil{return "",step.Err()}
