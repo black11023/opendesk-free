@@ -35,3 +35,39 @@ jobs:
         run: python tests/generate_real_fixtures.py
       - name: Integration tests using real LibreOffice, Tesseract and OCRmyPDF
         run: go test -tags=integration -count=1 -v ./internal/integration
+
+  translate-real-model:
+    name: Real offline Argos DOCX translation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install free offline Argos inference engine
+        run: python -m pip install --disable-pip-version-check 'argostranslate==1.9.6'
+      - name: Install a real direct EN to ES offline test model
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import argostranslate.package as package
+          package.update_package_index()
+          available=package.get_available_packages()
+          direct=next((x for x in available if x.from_code=="en" and x.to_code=="es"),None)
+          if direct is None:raise RuntimeError("No direct English->Spanish Argos model published")
+          path=direct.download()
+          package.install_from_path(path)
+          installed=package.get_installed_packages()
+          assert any(x.from_code=="en" and x.to_code=="es" for x in installed),"Model install verification failed"
+          print("Direct offline EN->ES model installed in isolated CI runner")
+          PY
+      - name: Verify actual Word translation, preserved original and CSV audit
+        run: |
+          go mod tidy
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealArgosDOCX$'
