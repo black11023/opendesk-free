@@ -22,12 +22,13 @@ import (
 	"opendesk-free/internal/engine"
 	"opendesk-free/internal/ocr"
  "opendesk-free/internal/office"
+ "opendesk-free/internal/preservetranslate"
 )
 
-//go:embed web/index.html web/catalog.js
+//go:embed web/index.html
 var web embed.FS
 
-const Version = "0.6.6-preview.1"
+const Version = "0.6.7-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.
@@ -76,14 +77,6 @@ func main() {
 		w.Header().Set("Content-Security-Policy", `default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`)
 		_, _ = io.WriteString(w, page)
 	})
-	mux.HandleFunc("GET /catalog.js", func(w http.ResponseWriter, r *http.Request) {
-  if !sameHost(w,r){return}
-  data,e:=web.ReadFile("web/catalog.js");if e!=nil{http.Error(w,"Catalog unavailable",500);return}
-  w.Header().Set("Content-Type","text/javascript; charset=utf-8")
-  w.Header().Set("Cache-Control","no-store")
-  w.Header().Set("X-Content-Type-Options","nosniff")
-  _,_=w.Write(data)
- })
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if !sameHost(w, r) {
 			return
@@ -214,7 +207,9 @@ func main() {
 		}
 		var result engine.Result
         var e error
-        if op=="office-pdf-batch"{
+        if op=="formguard-audit"{
+           result,e=preservetranslate.Preflight(r.Context(),files)
+         }else if op=="office-pdf-batch"{
           ctx,cancel:=context.WithTimeout(r.Context(),4*time.Minute)
           defer cancel()
           result,e=office.RunBatch(ctx,files)

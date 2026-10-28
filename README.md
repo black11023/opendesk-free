@@ -1,4 +1,4 @@
-# OpenDesk Free — free, private tools for everyone 🧰
+# OpenDesk Free — free multilingual document quality tools
 
 **English · Tiếng Việt** | **No subscription · No account · Offline-first**
 
@@ -8,32 +8,28 @@
 
 [Download for Windows](https://github.com/black11023/opendesk-free/releases) · [Report a bug](https://github.com/black11023/opendesk-free/issues) · [Contribute](CONTRIBUTING.md) · [Roadmap](docs/ROADMAP.md)
 
-> **v0.6.6-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
+> **v0.6.7-preview.1 — Windows 10/11 x64 preview.** Automated tests, Windows executable builds and a local HTTP runtime smoke test run on GitHub Actions. End-user Windows installation and third-party converter accuracy are not yet certified. Executables are unsigned.
 
 OpenDesk Free provides a friendly desktop launcher for essential document operations without paid cloud APIs. English is the default; switch to **Tiếng Việt** at any time. The application runs on `127.0.0.1` and does not upload your files.
 
-## Features — truthful availability
+## Focused V0.6.7 interface — truthful availability
 
-| Feature | State | Details |
+| Feature | State | Notes |
 |---|---|---|
-| PDF merge, select/split/reorder pages, rotate | **Built-in** | Choose page ranges |
-| **PDF batch audit → CSV** | **Built-in (V0.6.2)** | 1–50 documents, valid/invalid status, pages, SHA-256, filenames, byte sizes |
-| PNG/JPG → PDF | **Built-in** | Max 25 images |
-| CSV → XLSX, DOCX → plain text | **Built-in** | Original files stay unchanged |
-| Organize ZIP, SHA-256 duplicate detection, text merge | **Built-in** | Download new results |
-| Image OCR → TXT/searchable PDF | **Optional local adapter** | Install Tesseract and language data |
-| Scan-PDF → searchable PDF | **Optional local adapter** | Install OCRmyPDF + Tesseract |
-| Word/Excel/PowerPoint → PDF | **Optional local adapter** | Install LibreOffice separately |
-| **Office batch → ZIP + CSV** | **Optional local adapter (V0.6.3)** | 2–8 files; preserves successful PDFs and reports individual failures |
-| 44 free software links, 11 categories | **Directory only** | External projects, not integrated |
-| FFmpeg, workflow automation, more platforms | **Planned** | Not yet available |
+| **FormGuard preflight DOCX/XLSX/PPTX** | **BUILT-IN** | Original SHA-256, ZIP/OOXML structure, formula/number/merge estimates, risky content, full CSV; up to 8 files |
+| **OCR images → TXT/searchable PDF** | **OPTIONAL** | Requires separately installed Tesseract |
+| **OCR scanned PDF → searchable PDF** | **OPTIONAL** | Requires separately installed OCRmyPDF + Tesseract |
+| **PreserveTranslate multilingual document translation** | **ROADMAP — NOT READY** | No translation engine, layout-preserving output or model packs bundled |
+| Standard PDF merge/split/rotate, image-PDF, ZIP and Office conversion, directory | **REMOVED FROM PRIMARY UI** | Legacy service operations retained temporarily for compatibility; not promoted |
+
+The 46 candidate languages are a routing catalog, **not installed translation models**. A FormGuard preflight CSV does **not** mean translation was performed. Security notice about unsigned Windows builds remains applicable.
 
 ### Install and use
 
 1. Open [Releases](https://github.com/black11023/opendesk-free/releases). Download the newest `OpenDeskFree_Setup_*.exe` or the Portable EXE.
 2. Check `SHA256SUMS.txt`. These EXEs are unsigned; do not blindly bypass system security warnings.
-3. Launch OpenDesk, select English or Vietnamese, choose an operation and drop your files into the window.
-4. To enable **Office → PDF**, install [LibreOffice](https://www.libreoffice.org/) separately and follow [Office setup](docs/OFFICE_LOCAL_SETUP.md). To enable OCR use [OCR setup](docs/OCR_LOCAL_SETUP.md).
+3. Launch OpenDesk and select FormGuard preflight or OCR. Actual multilingual document translation is not yet ready.
+4. To enable OCR, follow [OCR setup](docs/OCR_LOCAL_SETUP.md) and install its optional dependencies yourself.
 
 ### Safety and limits
 
@@ -106,7 +102,7 @@ The built-in **Audit PDF files → CSV** tool inspects up to 50 inputs (40 MB to
 - Chromium CI runs a Linux regression that intentionally starts a shell plus background child, cancels the request, and confirms the child is no longer running. Windows builds compile platform-specific cancellation support; an exhaustive Windows worker-process-tree test remains a future requirement.
 - Fixes the README feature-table formatting so international users can distinguish built-in, optional, planned and directory-only features.
 
-### V0.6.6 Preview 1 — beginner-friendly file selection
+### V0.6.7 Preview 1 — beginner-friendly file selection
 
 - The local workbench now explains each selected operation in **three short steps** in English and Vietnamese, including the output format. Help remains available entirely offline.
 - The file picker filters extensions for built-in text/CSV tools, PDF, image, OCR and optional Office operations. Drag/drop of unsupported extensions shows a clear bilingual warning **before processing** and disables the Process button.
@@ -114,7 +110,7 @@ The built-in **Audit PDF files → CSV** tool inspects up to 50 inputs (40 MB to
 - Fix the Office batch operation appearing under **Files** instead of **Office**.
 - All core conversion semantics and source-preserving behavior are unchanged. This remains an unsigned Preview, not an offline replacement for complete Office applications.
  
-### V0.6.6 Candidate — Windows remediation and release safety
+### V0.6.7 Candidate — Windows remediation and release safety
 
 - The Portable opens the browser with **native ShellExecuteW**, shows startup errors via **MessageBoxW**, and no longer launches PowerShell or `rundll32.exe` during startup.
 - The Windows Setup creates the Start Menu shortcut through COM `IShellLinkW`/`IPersistFile` without PowerShell script execution. Uninstaller cleanup uses plain, non-encoded PowerShell without changing script execution policy.
