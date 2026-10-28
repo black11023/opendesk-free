@@ -1,0 +1,94 @@
+name: Refresh README screenshot from verified main UI
+
+on:
+  workflow_run:
+    workflows:
+      - Chromium UI and memory acceptance
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: opendesk-readme-preview
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Only accept current main commit and real Chromium evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TEST_SHA: ${{ github.event.workflow_run.head_sha }}
+          TEST_RUN: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/$REPO/commits/main" --jq .sha)"
+          if [ "$current" != "$TEST_SHA" ]; then
+            echo "Main has advanced; discard stale screenshot from $TEST_SHA"
+            echo "SKIP_CAPTURE=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          result="$(gh api "repos/$REPO/actions/runs/$TEST_RUN" --jq '.conclusion + "|" + .event + "|" + .head_sha')"
+          [ "$result" = "success|push|$TEST_SHA" ] || { echo "Unverified screenshot source"; exit 1; }
+      - name: Download exact tested English Chromium screenshot
+        if: env.SKIP_CAPTURE != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TEST_RUN: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p incoming assets
+          gh run download "$TEST_RUN" -R "$REPO" -n opendesk-chromium-ui-memory -D incoming
+          python3 - <<'PY'
+          import pathlib,struct,shutil
+          p=pathlib.Path("incoming/focused-en.png")
+          data=p.read_bytes()
+          assert len(data)>20000 and len(data)<4*1024*1024,"Unexpected screenshot size"
+          assert data[:8]==b"\x89PNG\r\n\x1a\n","Screenshot is not a PNG"
+          w,h=struct.unpack(">II",data[16:24])
+          assert 700<=w<=3000 and 700<=h<=5000, f"Unexpected screenshot dimensions: {w}x{h}"
+          shutil.copyfile(p,"assets/desktop-preview.png")
+          print(f"Verified real English screenshot from Chromium: {w}x{h}")
+          PY
+      - name: Commit latest screenshot only if changed
+        if: env.SKIP_CAPTURE != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/desktop-preview.png
+          if git diff --cached --quiet; then
+            echo "English screenshot already current; no commit necessary."
+            exit 0
+          fi
+          git commit -m "docs(screenshot): update README image from tested English Chromium UI [skip ci]"
+          if git push origin HEAD:main; then
+            echo "README screenshot updated on main."
+          else
+            echo "Direct push blocked; publishing an auditable screenshot pull request."
+            b="docs/verified-english-screenshot-${SOURCE_SHA:0:12}"
+            git push origin HEAD:"$b"
+            gh pr create -R "$REPO" --base main --head "$b" \
+              --title "docs: real latest English UI screenshot" \
+              --body "Automatically captured from successful main Chromium run at commit $SOURCE_SHA. Contains only assets/desktop-preview.png; no simulated/AI-generated UI."
+          fi
