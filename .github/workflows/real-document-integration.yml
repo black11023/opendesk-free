@@ -128,9 +128,7 @@ jobs:
       - name: Verify actual Word translation, preserved original and CSV audit
         run: |
           go mod tidy
-          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealArgosDOCX
-
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run TestRealArgosDOCX
       - name: Verify actual Excel translation with real Argos and LibreOffice
         run: |
-          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealArgosXLSX
-
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run TestRealArgosXLSX
