@@ -28,3 +28,10 @@ test('screenshot refresh never bypasses release CI',()=>{
  assert.doesNotMatch(screenshot,/git commit -m[^\n]*\[skip ci\]/);
  assert.match(screenshot,/git diff --cached --quiet/);
 });
+
+test('screenshot workflow never directly advances main from workflow_run',()=>{
+ const flow=fs.readFileSync('.github/workflows/refresh-readme-preview.yml','utf8');
+ assert.doesNotMatch(flow,/git push origin HEAD:main/);
+ assert.match(flow,/gh pr create -R "\$REPO" --base main/);
+ assert.match(flow,/git diff --cached --quiet/);
+});
