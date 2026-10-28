@@ -6,6 +6,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Cancel obsolete PR revisions: large model downloads must not compete for
+# bandwidth or burn minutes after a newer SHA supersedes them.
+concurrency:
+  group: real-document-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   real-documents:
     runs-on: ubuntu-latest
@@ -35,3 +40,100 @@ jobs:
         run: python tests/generate_real_fixtures.py
       - name: Integration tests using real LibreOffice, Tesseract and OCRmyPDF
         run: go test -tags=integration -count=1 -v ./internal/integration
+
+  translate-real-model:
+    name: Real offline Argos DOCX translation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install free offline Argos inference engine
+        run: python -m pip install --disable-pip-version-check 'argostranslate==1.9.6'
+      - name: Install real LibreOffice writer to validate DOCX outputs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils
+      - name: Restore official model cache (verified by SHA-256 below)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/opendesk/argos-en_es.argosmodel
+          key: argos-en-es-v1-d698d0ef87ad70d5
+      - name: Download actual EN to ES test model with resumable transfers
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The official file is ~87.5 MB and has been as slow as 140 kB/s.
+          # Resume a partial download instead of restarting it each time.
+          # Model is only installed on the isolated CI runner (not shipped to users).
+          path="$HOME/.cache/opendesk/argos-en_es.argosmodel"
+          mkdir -p "$(dirname "$path")"
+          url='https://argos-net.com/v1/translate-en_es-1_0.argosmodel'
+          expected_size=87503191
+          sha=d698d0ef87ad70d5d184b7fa6965905bf4368f09a2bb9ffb165a79bac96af0c4
+          if [[ -f "$path" ]] && echo "$sha  $path" | sha256sum --check --status; then
+            echo "Verified cached model (SHA-256 pinned)"
+          else
+            rm -f "$path"
+            for attempt in 1 2 3; do
+              echo "Official Argos model transfer attempt $attempt/3"
+              if curl --fail --location --show-error --silent --continue-at - \
+                --connect-timeout 20 --max-time 720 --speed-time 90 --speed-limit 16384 \
+                "$url" -o "$path"; then
+                break
+              fi
+              if [[ "$attempt" == 3 ]]; then
+                echo "::error::Official Argos model download unavailable after resumable attempts"
+                exit 1
+              fi
+              sleep 3
+            done
+          fi
+          echo "$sha  $path" | sha256sum --check --status || {
+            echo "::error::Argos model SHA-256 mismatch"
+            exit 1
+          }
+          actual_size="$(stat -c%s "$path")"
+          if [[ "$actual_size" -ne "$expected_size" ]]; then
+            echo "::error::Argos test model incomplete or changed: $actual_size bytes, expected $expected_size"
+            exit 1
+          fi
+          # Digest is recorded as evidence, not yet claimed to be independently pinned.
+          sha256sum "$path"
+          python - "$path" <<'PY'
+          import sys,zipfile,json
+          path=sys.argv[1]
+          with zipfile.ZipFile(path) as z:
+              bad=z.testzip()
+              assert bad is None, f"Corrupt archive: {bad}"
+              assert len(z.namelist()) < 300, "Unexpected archive part count"
+              names=set(z.namelist())
+              meta_name=next((x for x in names if x.endswith("metadata.json")),None)
+              assert meta_name, "Missing Argos package metadata"
+              meta=json.loads(z.read(meta_name))
+              assert meta.get("from_code")=="en" and meta.get("to_code")=="es", "Incorrect model language pair"
+              print("Real Argos package ZIP structure and language metadata checked")
+          PY
+          echo "ARGOS_TEST_MODEL=$path" >> "$GITHUB_ENV"
+      - name: Install and verify isolated direct Argos language model
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import argostranslate.package as package
+          package.install_from_path(os.environ["ARGOS_TEST_MODEL"])
+          installed=package.get_installed_packages()
+          assert any(x.from_code=="en" and x.to_code=="es" for x in installed),"Model install verification failed"
+          print("Direct offline EN->ES model installed in isolated CI runner")
+          PY
+      - name: Verify actual Word translation, preserved original and CSV audit
+        run: |
+          go mod tidy
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealArgosDOCX$'

@@ -22,7 +22,7 @@ try{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  assert.equal((await page.goto(url+'/',{waitUntil:'networkidle'})).status(),200);
  assert.equal(await page.locator('#lang').inputValue(),'en');
- assert.equal(await page.locator('.operation').count(),3,'only FormGuard and OCR visible');
+ assert.equal(await page.locator('.operation').count(),4,'FormGuard, optional offline DOCX translation and OCR visible');
  assert.equal(await page.locator('#community-hub').count(),0);
  assert.equal(await page.locator('.operation[data-op="formguard-audit"]').count(),1);
  assert.match(await page.locator('.suite-banner').innerText(),/NOT ready/);
@@ -48,6 +48,10 @@ try{
  await page.screenshot({path:path.join(folder,'focused-vi.png'),fullPage:true});
  await page.locator('.operation[data-op="ocr-images"]').click();
  assert.equal(await page.locator('#ocr-options').isVisible(),true);
+ await page.locator('.operation[data-op="translate-docx"]').click();
+ assert.equal(await page.locator('#translate-options').isVisible(),true);
+ await page.locator('#translate-status').waitFor({state:'visible'});
+ assert.equal(await page.locator('#process').isDisabled(),true,'translator must fail closed when model not installed');
  await page.locator('#lang').selectOption('en');
  await page.locator('.operation[data-op="formguard-audit"]').click();
  await page.locator('#files').setInputFiles({name:'cancel.docx',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',buffer:docx});
@@ -60,7 +64,7 @@ try{
  await page.unroute('**/process');
  assert.deepEqual(errors,[]);
  const rss=await rssMiB(proc.pid);if(rss!==null)assert.ok(rss<512,'Excess RSS '+rss);
- await writeFile(path.join(folder,'focused-memory.json'),JSON.stringify({rssMiB:rss,visibleTools:3,docxBytes:docx.length},null,2));
+ await writeFile(path.join(folder,'focused-memory.json'),JSON.stringify({rssMiB:rss,visibleTools:4,docxBytes:docx.length},null,2));
  await browser.close();browser=null;
  const html=await (await fetch(url+'/')).text(),token=html.match(/const TOKEN='([a-f0-9]{64})'/)?.[1];
  if(token)await fetch(url+'/quit',{method:'POST',headers:{'X-OpenDesk-Token':token}}).catch(()=>{});
