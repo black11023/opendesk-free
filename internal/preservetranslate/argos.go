@@ -68,6 +68,13 @@ func FindArgosPython()(string,error){
  }
  return "",errors.New("Python and offline Argos Translate are not installed")
 }
+// boundedBuffer prevents a broken/untrusted local inference package from filling
+// the parent application's heap with unbounded stdout or stderr.
+type boundedBuffer struct { bytes.Buffer; Max int }
+func (b *boundedBuffer) Write(p []byte)(int,error){
+ if b.Len()+len(p)>b.Max{return 0,errors.New("local translator output exceeds safety limit")}
+ return b.Buffer.Write(p)
+}
 func (p ArgosProvider)call(ctx context.Context,r workerRequest)(workerResponse,error){
  binary:=p.Python
  if binary==""{var e error;binary,e=FindArgosPython();if e!=nil{return workerResponse{},e}}
@@ -76,15 +83,15 @@ func (p ArgosProvider)call(ctx context.Context,r workerRequest)(workerResponse,e
  step,cancel:=context.WithTimeout(ctx,2*time.Minute);defer cancel()
  cmd:=procrun.Command(step,binary,"-I","-c",argosWorker)
  cmd.Stdin=bytes.NewReader(input)
- var output,errorsOutput bytes.Buffer
- cmd.Stdout=&output;cmd.Stderr=&errorsOutput
+ output:=&boundedBuffer{Max:2<<20}
+ errorsOutput:=&boundedBuffer{Max:8<<10}
+ cmd.Stdout=output;cmd.Stderr=errorsOutput
  if e=cmd.Run();e!=nil{
    if step.Err()!=nil{return workerResponse{},fmt.Errorf("offline translation cancelled/timed out: %w",step.Err())}
    var failure workerResponse
    if json.Unmarshal(output.Bytes(),&failure)==nil&&failure.Error!=""{return workerResponse{},fmt.Errorf("Argos: %s",failure.Error)}
    return workerResponse{},fmt.Errorf("local Argos Python worker failed: %v",e)
  }
- if output.Len()>2<<20{return workerResponse{},errors.New("worker output too large")}
  var result workerResponse
  if e=json.Unmarshal(output.Bytes(),&result);e!=nil{return workerResponse{},fmt.Errorf("invalid offline model response: %w",e)}
  if result.Error!=""{return workerResponse{},errors.New(result.Error)}
