@@ -28,7 +28,7 @@ import (
 //go:embed web/index.html
 var web embed.FS
 
-const Version = "0.6.9-preview.1"
+const Version = "0.7.0-preview.1"
 
 func main() {
  // This is a soft Go heap budget, not a cap on external application processes.
@@ -216,7 +216,7 @@ func main() {
           combined+=header.Size
         }
 		op := r.FormValue("operation")
-        if isExternalOperation(op)||op=="translate-docx"{
+        if isExternalOperation(op)||op=="translate-docx"||op=="translate-xlsx"{
           if !externalGate.TryEnter(){
             w.Header().Set("Retry-After","3")
             http.Error(w,localized(r,
@@ -259,7 +259,11 @@ func main() {
 		}
 		var result engine.Result
         var e error
-        if op=="translate-docx"{
+        if op=="translate-xlsx"{
+           ctx,cancel:=context.WithTimeout(r.Context(),3*time.Minute)
+           defer cancel()
+           result,e=preservetranslate.TranslateXLSX(ctx,files,r.FormValue("source_lang"),r.FormValue("target_lang"),preservetranslate.ArgosProvider{})
+         }else if op=="translate-docx"{
            ctx,cancel:=context.WithTimeout(r.Context(),3*time.Minute)
            defer cancel()
            result,e=preservetranslate.TranslateDOCX(ctx,files,r.FormValue("source_lang"),r.FormValue("target_lang"),preservetranslate.ArgosProvider{})
