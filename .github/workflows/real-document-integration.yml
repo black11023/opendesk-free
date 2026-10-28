@@ -6,6 +6,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Cancel obsolete PR revisions: large model downloads must not compete for
+# bandwidth or burn minutes after a newer SHA supersedes them.
+concurrency:
+  group: real-document-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   real-documents:
     runs-on: ubuntu-latest
