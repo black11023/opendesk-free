@@ -83,7 +83,10 @@ func ValidateApprovedModel(file *os.File,p ApprovedPack)error {
     return errors.New("BLOCKED: suspicious compression ratio")
   }
   rd,err:=part.Open();if err!=nil{return fmt.Errorf("BLOCKED: model ZIP read error: %w",err)}
-  if part.Name=="metadata.json"{
+  // Official Argos packages may nest metadata.json in one package directory.
+  // Require exactly one metadata file anywhere in the pinned archive.
+  if path.Base(clean)=="metadata.json"{
+    if foundMeta {rd.Close();return errors.New("BLOCKED: multiple model metadata files")}
     var meta struct {From string `json:"from_code"`;To string `json:"to_code"`}
     body,readErr:=io.ReadAll(io.LimitReader(rd,64<<10))
     closeErr:=rd.Close()
