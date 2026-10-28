@@ -70,3 +70,51 @@ func TestRealApprovedModelInstall(t *testing.T){
  if receipt.Status!="READY"||receipt.Pair!="en->es"||receipt.SHA256!=approvedPacks[0].SHA256{t.Fatalf("wrong installer receipt: %+v",receipt)}
  t.Log("PASS: offline Go intake, SHA-256/ZIP validation, Argos package install and live inference")
 }
+
+
+func TestRealArgosXLSX(t *testing.T){
+ ctx:=context.Background()
+ status:=ProbeArgos(ctx)
+ if !status.Installed||!strings.Contains(strings.Join(status.DirectPairs,","),"en->es"){
+   t.Fatalf("installed direct Argos en->es model required: %+v",status)
+ }
+ sheet:=strings.Replace(spreadsheetSheet(t),"Hello 2026","Hello there.",1)
+ labels:=`<sst xmlns="`+excelNS+`" count="3" uniqueCount="2"><si><t>Hello world.</t></si><si><t>Good morning.</t></si></sst>`
+ source:=xlsxFixture(t,sheet,labels,nil)
+ original:=append([]byte(nil),source...)
+ response,e:=TranslateXLSX(ctx,[]engine.Input{{Name:"Budget.xlsx",Data:source}},"en","es",ArgosProvider{})
+ if e!=nil{t.Fatalf("actual EN→ES Argos XLSX translation failed: %v",e)}
+ result:=extractZipPart(t,response.Data,"Budget_es.xlsx")
+ sst:=string(extractZipPart(t,result,"xl/sharedStrings.xml"))
+ if strings.Contains(sst,"Hello world.")||strings.Contains(sst,"Good morning."){
+  t.Fatalf("real installed Argos model did not translate shared Excel labels: %s",sst)
+ }
+ if !bytes.Equal(original,source){t.Fatal("original XLSX changed")}
+ if !bytes.Equal(extractZipPart(t,result,"xl/styles.xml"),extractZipPart(t,source,"xl/styles.xml")){
+  t.Fatal("Excel styles changed")
+ }
+ worksheet:=string(extractZipPart(t,result,"xl/worksheets/sheet1.xml"))
+ if !strings.Contains(worksheet,"<f>B1*2</f><v>2500.5</v>")||!strings.Contains(worksheet,"<v>1250.25</v>"){
+  t.Fatal("formula or numeric values changed")
+ }
+ if !strings.Contains(string(extractZipPart(t,response.Data,"Translation_Audit.csv")),"REVIEW_MEANING_AND_CELL_OVERFLOW"){
+  t.Fatal("translated workbook lacks review audit")
+ }
+ dir:=t.TempDir()
+ xlsxFile:=filepath.Join(dir,"Budget_es.xlsx")
+ if e:=os.WriteFile(xlsxFile,result,0600);e!=nil{t.Fatal(e)}
+ officeCtx,cancel:=context.WithTimeout(ctx,60*time.Second);defer cancel()
+ soffice,e:=exec.LookPath("soffice");if e!=nil{t.Fatalf("LibreOffice required: %v",e)}
+ cmd:=exec.CommandContext(officeCtx,soffice,"-env:UserInstallation=file://"+filepath.ToSlash(filepath.Join(dir,"profile-xlsx")),"--headless","--convert-to","pdf","--outdir",dir,xlsxFile)
+ stdout,e:=cmd.CombinedOutput()
+ if e!=nil{t.Fatalf("actual LibreOffice could not open translated XLSX: %v: %s",e,stdout)}
+ renderedPDF:=filepath.Join(dir,"Budget_es.pdf")
+ pdf,e:=os.Open(renderedPDF);if e!=nil{t.Fatalf("LibreOffice did not render translated XLSX: %v",e)}
+ defer pdf.Close()
+ buf:=make([]byte,5)
+ if _,e=io.ReadFull(pdf,buf);e!=nil||string(buf)!="%PDF-"{t.Fatal("LibreOffice rendered an invalid PDF")}
+ extracted,e:=exec.CommandContext(officeCtx,"pdftotext",renderedPDF,"-").Output()
+ if e!=nil||len(strings.TrimSpace(string(extracted)))<8{t.Fatalf("Excel PDF is not searchable: %v %s",e,extracted)}
+ if strings.Contains(string(extracted),"Hello world."){t.Fatal("LibreOffice still renders source label")}
+ t.Log("PASS: real model XLSX inference, original unchanged, native formulas/styles, complete review audit and LibreOffice rendering")
+}
