@@ -63,7 +63,7 @@ try{
  assert.equal(await page.locator('#translate-options').isVisible(),true,'XLSX uses shared offline model controls');
  assert.equal(await page.locator('#process').isDisabled(),true,'Excel translation must fail closed without local model');
  assert.match(await page.locator('#translate-heading').innerText(),/Excel/);
- assert.match(await page.locator('#translate-details').innerText(),/formulas/);
+ assert.match(await page.locator('#translate-details').innerText(),/công thức|formulas/);
 
  await page.locator('#lang').selectOption('en');
  await page.locator('.operation[data-op="formguard-audit"]').click();
