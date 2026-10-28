@@ -1,34 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import vm from 'node:vm';
-const ctx={window:{}};
-vm.runInNewContext(fs.readFileSync('cmd/opendesk/web/catalog.js','utf8'),ctx);
-const catalog=ctx.window.OpenDeskCatalog;
 const html=fs.readFileSync('cmd/opendesk/web/index.html','utf8');
-test('curated directory has unique HTTPS-only external links',()=>{
- assert.ok(catalog.length>=40,'expected at least 40 projects');
- assert.equal(new Set(catalog.map(x=>x.name.toLowerCase())).size,catalog.length);
- assert.ok(new Set(catalog.map(x=>x.category)).size>=10);
- for(const x of catalog){
-  assert.equal(x.status,'external');
-  assert.match(x.url,/^https:\/\//);
-  assert.ok(x.name&&x.aboutEn&&x.aboutVi&&x.category);
+const main=fs.readFileSync('cmd/opendesk/main.go','utf8');
+test('focused workbench has only FormGuard and two OCR tools',()=>{
+ const ops=[...html.matchAll(/<button class="operation(?: active)?" data-op="([^"]+)"/g)].map(x=>x[1]);
+ assert.deepEqual(ops,['formguard-audit','ocr-images','ocr-pdf']);
+ for(const op of ['pdf-merge','pdf-split','pdf-rotate','images-pdf','organize','csv-xlsx','docx-txt','office-pdf']){
+  assert.ok(!ops.includes(op),'generic tool still in main menu: '+op);
  }
+ assert.doesNotMatch(html,/id="community-hub"|src="\/catalog\.js"|id="tool-search"/);
+ assert.doesNotMatch(main,/web\/catalog\.js|GET \/catalog\.js/);
 });
-test('directory never implies bundled integrations',()=>{
- assert.match(html,/id="community-hub"/);
- assert.match(html,/id="hub-search"/);
- assert.match(html,/id="hub-tabs"/);
- assert.match(html,/id="hub-grid"/);
- assert.match(html,/window\.OpenDeskCatalog/);
- assert.match(html,/rec\.status!=='external'/);
- assert.match(html,/noopener noreferrer/);
- assert.match(html,/Ctrl\+K/);
-});
-test('native image PDF is offered in both locales',()=>{
- assert.match(html,/data-op="images-pdf"/);
- assert.match(html,/data-en="Images → PDF"/);
- assert.match(html,/data-vi="Ảnh → PDF"/);
- assert.match(html,/if\(op==='ocr-images'\|\|op==='images-pdf'\)return \['\.png','\.jpg','\.jpeg'\]/);
+test('translation roadmap must never be misrepresented as a working translator',()=>{
+ assert.match(html,/data-en="Multilingual document translation — in development"/);
+ assert.match(html,/Actual translation and layout-preserving exports are NOT ready/);
+ assert.match(html,/data-en="FormGuard — Document preflight"/);
+ assert.match(main,/preservetranslate\.Preflight\(r\.Context\(\),files\)/);
 });

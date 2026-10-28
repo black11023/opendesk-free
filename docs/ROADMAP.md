@@ -107,14 +107,14 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Fixed malformed Markdown feature-table line breaks in README, plus more explicit limits and documentation.
 - Future: Windows real Office/Tesseract child-process exit verification on actual PC and hard memory-budgeting through OS facilities where safe.
 
-### V0.6.6 Preview 1 — zero-cost first-use guidance
+### V0.6.7 Preview 1 — zero-cost first-use guidance
 
 - Implement a compact English/Vietnamese three-step explanation per built-in or optional operation in the existing workbench, with clear output expectations.
 - Restrict normal file-picker extensions, fail early with readable inline warnings for mismatched dropped files. Intentionally preserve invalid inputs for read-only PDF audits and resilient Office batch FAIL reporting.
 - Correct Office batch category filtering; require Chromium acceptance of wrong-extension rejection, language switching, valid-file recovery and proper Office category membership.
 - Next: test with volunteer users on older Windows 10/11 laptops, improve error messages for missing OCR/LibreOffice, and develop a safer optional-dependency installation guide; **do not** bundle or silently download outside binaries.
 
-### V0.6.6 Windows security incident remediation
+### V0.6.7 Windows security incident remediation
 
 - Remove nonessential external process launch from Portable startup and use native Win32 APIs.
 - Use COM to write installed .lnk files instead of invoking PowerShell; simplify uninstaller cleanup without encoded commands or bypass settings.
@@ -126,3 +126,10 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Multilingual is a **core requirement** of G1, not a future G5 enhancement. 46 potential language tags, dynamic verified model routes, up to 16 targets, mixed-language source planning, separate output per destination, fail-closed if any model/route is unavailable.
 - Human-approved pivot via English can lower quality; all formulas, amounts, codes and templates remain protected by FormGuard and later per-format invariants.
 - Code in `internal/preservetranslate/languages.go` is only G0 **planning**, not an end-user translation engine; see `docs/MULTILINGUAL_SPEC_V1.md`. No language-pack downloads or cloud upload.
+
+### V0.6.7 Focused Workbench — 28 October 2026
+
+- Main interface shows **FormGuard structural OOXML preflight**, optional image OCR, optional scanned PDF OCR. Remove generic PDF operations, ZIP/Office conversions and 44-link community directory from the main UI. Legacy underlying API remains temporarily for compatibility and regression tests.
+- NEW functioning read-only FormGuard report for DOCX/XLSX/PPTX. It flags unsafe archive structures, risky embedded objects and formulas; exports full SHA-256/structure CSV. No document translation is performed or claimed.
+- Next P0: actual offline multilingual models, true OOXML text editing with no changes to formulas/codes/amounts, layout fidelity and human review; all separate release gates.
+- Do not label this as stable or signed. Preserve EICAR-controlled ClamAV, real Windows installer, real OCR and Chromium CI.

@@ -1,4 +1,3 @@
-
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
@@ -6,144 +5,64 @@ import {setTimeout as sleep} from 'node:timers/promises';
 import {chromium} from 'playwright';
 import net from 'node:net';
 import path from 'node:path';
-
-// Real Chromium clicks and downloads against the compiled OpenDesk binary.
-// Screenshots are generated CI artifacts, not screenshots of a consumer Windows PC.
-const executable=process.env.OPEN_DESK_EXECUTABLE;
-assert.ok(executable,'OPEN_DESK_EXECUTABLE must point to the compiled local binary');
-const artifactDir=path.resolve('artifacts/browser');
-await mkdir(artifactDir,{recursive:true});
-const source=await readFile('tests/fixtures/pdf_two_pages.pdf');
-async function freePort(){
- const srv=net.createServer();
- await new Promise((resolve,reject)=>{srv.once('error',reject);srv.listen(0,'127.0.0.1',resolve)});
- const p=srv.address().port;await new Promise(resolve=>srv.close(resolve));return p;
-}
-async function ready(url,proc){
- for(let i=0;i<160;i++){
-  if(proc.exitCode!==null)throw Error('OpenDesk exited '+proc.exitCode);
-  try{const response=await fetch(url+'/health',{signal:AbortSignal.timeout(700)});if(response.ok)return}
-  catch(_){}
-  await sleep(150);
- }
- throw Error('No OpenDesk listener after 24 seconds');
-}
-async function rssMiB(pid){
- if(process.platform!=='linux')return null;
- try{
-  const status=await readFile('/proc/'+pid+'/status','utf8');
-  const match=status.match(/^VmRSS:\s+(\d+)\s+kB/m);
-  return match?Number(match[1])/1024:null;
- }catch(_){return null}
-}
-const port=await freePort(),url='http://127.0.0.1:'+port;
-const app=spawn(executable,['--port='+port,'--no-browser'],{stdio:['ignore','pipe','pipe']});
-let diagnostics='';
-for(const stream of [app.stdout,app.stderr])stream.on('data',x=>{diagnostics=(diagnostics+String(x)).slice(-14000)});
-let browser;
-let screenshot='Not captured';
+const binary=process.env.OPEN_DESK_EXECUTABLE;
+assert.ok(binary,'OPEN_DESK_EXECUTABLE required');
+const folder=path.resolve('artifacts/browser');await mkdir(folder,{recursive:true});
+async function freePort(){const s=net.createServer();await new Promise((a,b)=>{s.once('error',b);s.listen(0,'127.0.0.1',a)});const n=s.address().port;await new Promise(r=>s.close(r));return n}
+async function ready(base,proc){for(let i=0;i<150;i++){if(proc.exitCode!==null)throw Error('App exited');try{const r=await fetch(base+'/health',{signal:AbortSignal.timeout(700)});if(r.ok)return}catch(_){}await sleep(180)}throw Error('App did not start')}
+async function rssMiB(pid){if(process.platform!=='linux')return null;try{const s=await readFile('/proc/'+pid+'/status','utf8');const m=s.match(/^VmRSS:\s+(\d+)\s+kB/m);return m?Number(m[1])/1024:null}catch(_){return null}}
+const url='http://127.0.0.1:'+(await freePort());
+const proc=spawn(binary,['--port='+url.split(':').pop(),'--no-browser'],{stdio:['ignore','pipe','pipe']});
+let browser;let diagnostics='';
+for(const stream of [proc.stdout,proc.stderr])stream.on('data',d=>diagnostics=(diagnostics+d).slice(-12000));
 try{
- await ready(url,app);
+ await ready(url,proc);
  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- const page=await browser.newPage({acceptDownloads:true,viewport:{width:1365,height:900},locale:'en-US'});
- const errors=[];
- page.on('pageerror',e=>errors.push(e.message));
- const response=await page.goto(url+'/',{waitUntil:'networkidle'});
- assert.equal(response.status(),200);
- assert.equal(await page.locator('#lang').inputValue(),'en','new users should start in English');
- await page.locator('#tool-search').fill('rotate');
- assert.equal(await page.locator('.operation:visible').count(),1,'search should narrow operations');
- assert.equal(await page.locator('.operation[data-op="pdf-rotate"]').isVisible(),true);
- await page.locator('#tool-search').fill('');
- await page.locator('#workbench-tabs button').filter({hasText:'PDF'}).first().click();
- assert.equal(await page.locator('.operation[data-op="pdf-merge"]').isVisible(),true);
- assert.equal(await page.locator('.operation[data-op="office-pdf"]').isVisible(),false);
- await page.locator('#workbench-tabs button').first().click();
- await page.screenshot({path:path.join(artifactDir,'english-workbench.png'),fullPage:true});
- await page.locator('#lang').selectOption('vi');
- assert.match(await page.locator('#headline').innerText(),/Không mất phí/);
- await page.locator('#tool-search').fill('xoay');
- assert.equal(await page.locator('.operation[data-op="pdf-rotate"]').isVisible(),true,'Vietnamese search');
- await page.screenshot({path:path.join(artifactDir,'vietnamese-workbench.png'),fullPage:true});
- await page.locator('#lang').selectOption('en');
- await page.locator('#tool-search').fill('');
-
- // A new user sees an operation-specific explanation and an actionable error
- // before an unsupported file can be submitted; language switch translates it.
- await page.locator('.operation[data-op="csv-xlsx"]').click();
- assert.match(await page.locator('#beginner-tip').innerText(),/CSV files/);
- await page.locator('#files').setInputFiles({name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('not a csv')});
- assert.equal(await page.locator('#file-warning').isVisible(),true);
- assert.match(await page.locator('#file-warning').innerText(),/Wrong file type/);
+ const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,height:840}});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ assert.equal((await page.goto(url+'/',{waitUntil:'networkidle'})).status(),200);
+ assert.equal(await page.locator('#lang').inputValue(),'en');
+ assert.equal(await page.locator('.operation').count(),3,'only FormGuard and OCR visible');
+ assert.equal(await page.locator('#community-hub').count(),0);
+ assert.equal(await page.locator('.operation[data-op="formguard-audit"]').count(),1);
+ assert.match(await page.locator('.suite-banner').innerText(),/NOT ready/);
+ await page.screenshot({path:path.join(folder,'focused-en.png'),fullPage:true});
+ await page.locator('#files').setInputFiles({name:'bad.pdf',mimeType:'application/pdf',buffer:await readFile('tests/fixtures/pdf_two_pages.pdf')});
  assert.equal(await page.locator('#process').isDisabled(),true);
- await page.locator('#lang').selectOption('vi');
- assert.match(await page.locator('#file-warning').innerText(),/Sai loại tệp/);
- await page.locator('#lang').selectOption('en');
- await page.locator('#files').setInputFiles({name:'valid.csv',mimeType:'text/csv',buffer:Buffer.from('name,amount\\nExample,1\\n')});
+ assert.match(await page.locator('#file-warning').innerText(),/Wrong file type/);
+ const docx=await readFile('tests/fixtures/sample.docx');
+ await page.locator('#files').setInputFiles({name:'source.docx',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',buffer:docx});
  assert.equal(await page.locator('#file-warning').isHidden(),true);
  assert.equal(await page.locator('#process').isEnabled(),true);
- // Office batch belongs in Office, not generic files.
- await page.locator('#workbench-tabs button').filter({hasText:'Office'}).click();
- assert.equal(await page.locator('.operation[data-op="office-pdf-batch"]').isVisible(),true);
- await page.locator('#workbench-tabs button').first().click();
- await page.locator('.operation[data-op="pdf-split"]').click();
- await page.locator('#files').setInputFiles({name:'two-pages.pdf',mimeType:'application/pdf',buffer:source});
- await page.locator('#pdf-pages').fill('2');
- assert.equal(await page.locator('#process').isEnabled(),true,'valid PDF selection must be actionable');
- const selectionDownload=page.waitForEvent('download',{timeout:45000});
- await page.locator('#process').click();
- const download=await selectionDownload;
- assert.equal(download.suggestedFilename(),'OpenDesk_Selected_Pages.pdf');
- const pageFile=await readFile(await download.path());
- assert.ok(pageFile.subarray(0,5).toString()==='%PDF-','selected-page result not PDF');
+ const event=page.waitForEvent('download',{timeout:45000});await page.locator('#process').click();
+ const download=await event;
+ assert.equal(download.suggestedFilename(),'OpenDesk_FormGuard_Preflight.csv');
+ const contents=(await readFile(await download.path())).toString('utf8');
+ assert.match(contents,/Source file,Format,SHA-256 original/);
+ assert.match(contents,/source\.docx,DOCX,[0-9a-f]{64}/);
+ assert.match(contents,/(READY|REVIEW|BLOCKED)/);
  assert.match(await page.locator('#status').innerText(),/Result created/);
- await page.locator('.operation[data-op="pdf-rotate"]').click();
- await page.locator('#files').setInputFiles([
-  {name:'first.pdf',mimeType:'application/pdf',buffer:source},
-  {name:'second.pdf',mimeType:'application/pdf',buffer:source}
- ]);
- const batchDownload=page.waitForEvent('download',{timeout:45000});
- await page.locator('#process').click();
- const batch=await batchDownload;
- assert.equal(batch.suggestedFilename(),'OpenDesk_Rotated_PDFs.zip');
- const zipped=await readFile(await batch.path());
- assert.equal(zipped.subarray(0,2).toString(),'PK','batch result not ZIP');
- await page.locator('.operation[data-op="pdf-audit"]').click();
- await page.locator('#files').setInputFiles([
-  {name:'valid.pdf',mimeType:'application/pdf',buffer:source},
-  {name:'bad.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-not-a-valid-document')}
- ]);
- const auditEvent=page.waitForEvent('download',{timeout:45000});
- await page.locator('#process').click();
- const auditDownload=await auditEvent;
- assert.equal(auditDownload.suggestedFilename(),'OpenDesk_PDF_Batch_Audit.csv');
- const auditContent=(await readFile(await auditDownload.path())).toString('utf8');
- assert.match(auditContent,/valid\.pdf,PASS,2/);
- assert.match(auditContent,/bad\.pdf,FAIL,0/);
- // A paused fetch represents a large conversion. The user must be able
- // to cancel without closing the application or downloading a fake result.
- await page.route('**/process',route=>{ /* Deliberately hold until AbortController aborts */ });
- await page.locator('.operation[data-op="pdf-audit"]').click();
- await page.locator('#files').setInputFiles({name:'cancel-test.pdf',mimeType:'application/pdf',buffer:source});
+ await page.locator('#lang').selectOption('vi');
+ assert.match(await page.locator('#headline').innerText(),/Tài liệu đa ngôn ngữ/);
+ assert.match(await page.locator('#beginner-tip').innerText(),/KHÔNG phải chức năng dịch/);
+ await page.screenshot({path:path.join(folder,'focused-vi.png'),fullPage:true});
+ await page.locator('.operation[data-op="ocr-images"]').click();
+ assert.equal(await page.locator('#ocr-options').isVisible(),true);
+ await page.locator('#lang').selectOption('en');
+ await page.locator('.operation[data-op="formguard-audit"]').click();
+ await page.locator('#files').setInputFiles({name:'cancel.docx',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',buffer:docx});
+ await page.route('**/process',route=>{/* wait for cancellation */});
  await page.locator('#process').click();
  await page.locator('#cancel-process').waitFor({state:'visible'});
  await page.locator('#cancel-process').click();
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('cancelled'),null,{timeout:8000});
- assert.equal(await page.locator('#cancel-process').isHidden(),true,'cancel control must reset');
- assert.equal(await page.locator('#process').isEnabled(),true,'cancelled job should release UI slot');
+ assert.equal(await page.locator('#process').isEnabled(),true);
  await page.unroute('**/process');
- assert.deepEqual(errors,[],'browser console script errors');
- const rss=await rssMiB(app.pid);
- const report={browser:'Chromium Linux',pdfTestBytes:source.length,batchZipBytes:zipped.length,appRssMiB:rss,untrustedOSLimitMiB:512,screenshots:['english-workbench.png','vietnamese-workbench.png']};
- if(rss!==null)assert.ok(rss<512,'unusually high RSS for tiny real PDF fixtures: '+rss.toFixed(1)+' MiB');
- await writeFile(path.join(artifactDir,'browser-memory.json'),JSON.stringify(report,null,2));
- console.log(JSON.stringify(report,null,2));
- screenshot='Captured';
+ assert.deepEqual(errors,[]);
+ const rss=await rssMiB(proc.pid);if(rss!==null)assert.ok(rss<512,'Excess RSS '+rss);
+ await writeFile(path.join(folder,'focused-memory.json'),JSON.stringify({rssMiB:rss,visibleTools:3,docxBytes:docx.length},null,2));
  await browser.close();browser=null;
- const token=(await (await fetch(url)).text()).match(/const TOKEN='([a-f0-9]{64})'/)?.[1];
+ const html=await (await fetch(url+'/')).text(),token=html.match(/const TOKEN='([a-f0-9]{64})'/)?.[1];
  if(token)await fetch(url+'/quit',{method:'POST',headers:{'X-OpenDesk-Token':token}}).catch(()=>{});
-}catch(e){
- console.error('OpenDesk browser acceptance failed. App log:',diagnostics);
- console.error('Screenshots:',screenshot);
- throw e;
-}finally{if(browser)await browser.close().catch(()=>{});app.kill()}
+}catch(e){console.error('Real Chromium focus acceptance failed:',e,'runtime:',diagnostics);throw e}
+finally{if(browser)await browser.close().catch(()=>{});proc.kill()}
