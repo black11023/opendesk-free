@@ -56,6 +56,15 @@ jobs:
           python-version: '3.12'
       - name: Install free offline Argos inference engine
         run: python -m pip install --disable-pip-version-check 'argostranslate==1.9.6'
+      - name: Install real LibreOffice writer to validate DOCX outputs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils
+      - name: Restore official model cache (verified by SHA-256 below)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/opendesk/argos-en_es.argosmodel
+          key: argos-en-es-v1-d698d0ef87ad70d5
       - name: Download actual EN to ES test model with resumable transfers
         shell: bash
         run: |
@@ -63,22 +72,33 @@ jobs:
           # The official file is ~87.5 MB and has been as slow as 140 kB/s.
           # Resume a partial download instead of restarting it each time.
           # Model is only installed on the isolated CI runner (not shipped to users).
-          path="$RUNNER_TEMP/en_es.argosmodel"
+          path="$HOME/.cache/opendesk/argos-en_es.argosmodel"
+          mkdir -p "$(dirname "$path")"
           url='https://argos-net.com/v1/translate-en_es-1_0.argosmodel'
           expected_size=87503191
-          for attempt in 1 2 3; do
-            echo "Official Argos model transfer attempt $attempt/3"
-            if curl --fail --location --show-error --silent --continue-at - \
-              --connect-timeout 20 --max-time 720 --speed-time 90 --speed-limit 16384 \
-              "$url" -o "$path"; then
-              break
-            fi
-            if [[ "$attempt" == 3 ]]; then
-              echo "::error::Official Argos model download unavailable after resumable attempts"
-              exit 1
-            fi
-            sleep 3
-          done
+          sha=d698d0ef87ad70d5d184b7fa6965905bf4368f09a2bb9ffb165a79bac96af0c4
+          if [[ -f "$path" ]] && echo "$sha  $path" | sha256sum --check --status; then
+            echo "Verified cached model (SHA-256 pinned)"
+          else
+            rm -f "$path"
+            for attempt in 1 2 3; do
+              echo "Official Argos model transfer attempt $attempt/3"
+              if curl --fail --location --show-error --silent --continue-at - \
+                --connect-timeout 20 --max-time 720 --speed-time 90 --speed-limit 16384 \
+                "$url" -o "$path"; then
+                break
+              fi
+              if [[ "$attempt" == 3 ]]; then
+                echo "::error::Official Argos model download unavailable after resumable attempts"
+                exit 1
+              fi
+              sleep 3
+            done
+          fi
+          echo "$sha  $path" | sha256sum --check --status || {
+            echo "::error::Argos model SHA-256 mismatch"
+            exit 1
+          }
           actual_size="$(stat -c%s "$path")"
           if [[ "$actual_size" -ne "$expected_size" ]]; then
             echo "::error::Argos test model incomplete or changed: $actual_size bytes, expected $expected_size"
