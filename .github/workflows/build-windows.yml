@@ -32,7 +32,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           go build -trimpath -ldflags '-H=windowsgui' -o cmd/setup/payload/OpenDeskFree.exe ./cmd/opendesk
-          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.6.9_preview1.exe
+          Copy-Item cmd/setup/payload/OpenDeskFree.exe dist/OpenDeskFree_Portable_0.7.0_preview1.exe
       - name: Run automated tests
         run: go test ./...
       - name: Vet Go source
@@ -42,7 +42,7 @@ jobs:
       - name: Build Windows setup executable
         shell: pwsh
         run: |
-          go build -trimpath -ldflags '-H=windowsgui' -o dist/OpenDeskFree_Setup_0.6.9_preview1.exe ./cmd/setup
+          go build -trimpath -ldflags '-H=windowsgui' -o dist/OpenDeskFree_Setup_0.7.0_preview1.exe ./cmd/setup
           Copy-Item go.sum dist/go.sum -Force
           Get-FileHash dist/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $(Split-Path -Leaf $_.Path)" } | Out-File dist/SHA256SUMS.txt -Encoding utf8
       - name: Windows Setup installation/upgrade/uninstall acceptance
@@ -50,7 +50,7 @@ jobs:
       - name: Upload installer build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: OpenDeskFree-Windows-v0.6.9_preview1
+          name: OpenDeskFree-Windows-v0.7.0_preview1
           path: dist/*
           if-no-files-found: error
           retention-days: 30
@@ -66,15 +66,15 @@ jobs:
       - name: Download the exact EXE files from Windows build
         uses: actions/download-artifact@v4
         with:
-          name: OpenDeskFree-Windows-v0.6.9_preview1
+          name: OpenDeskFree-Windows-v0.7.0_preview1
           path: dist
       - name: Check release hashes before scanning
         run: |
           set -euo pipefail
           cd dist
           sha256sum --check SHA256SUMS.txt
-          test -s OpenDeskFree_Portable_0.6.9_preview1.exe
-          test -s OpenDeskFree_Setup_0.6.9_preview1.exe
+          test -s OpenDeskFree_Portable_0.7.0_preview1.exe
+          test -s OpenDeskFree_Setup_0.7.0_preview1.exe
       - name: Install ClamAV antivirus and fresh database
         run: |
           set -euo pipefail
@@ -98,7 +98,7 @@ jobs:
             exit 1
           fi
           rc=0
-          clamscan --no-summary dist/OpenDeskFree_Portable_0.6.9_preview1.exe dist/OpenDeskFree_Setup_0.6.9_preview1.exe > AV_SCAN.txt || rc=$?
+          clamscan --no-summary dist/OpenDeskFree_Portable_0.7.0_preview1.exe dist/OpenDeskFree_Setup_0.7.0_preview1.exe > AV_SCAN.txt || rc=$?
           cat AV_SCAN.txt
           if [ "$rc" -ne 0 ]; then
             echo "BLOCKED: antivirus detection or scan failure (exit $rc)"
@@ -109,7 +109,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: OpenDeskFree-AV-Evidence-v0.6.9
+          name: OpenDeskFree-AV-Evidence-v0.7.0
           path: |
             AV_ENGINE.txt
             AV_EICAR.txt

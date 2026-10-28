@@ -59,7 +59,9 @@ jobs:
       - name: Install real LibreOffice writer to validate DOCX outputs
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils
+          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc poppler-utils
+      - name: Generate the same LibreOffice-tested XLSX fixture used by Office integration
+        run: python tests/generate_real_fixtures.py --xlsx-only
       - name: Restore official model cache (verified by SHA-256 below)
         uses: actions/cache@v4
         with:
@@ -128,4 +130,7 @@ jobs:
       - name: Verify actual Word translation, preserved original and CSV audit
         run: |
           go mod tidy
-          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealArgosDOCX$'
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run TestRealArgosDOCX
+      - name: Verify actual Excel translation with real Argos and LibreOffice
+        run: |
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run TestRealArgosXLSX

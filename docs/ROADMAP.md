@@ -143,3 +143,7 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 ### V0.6.9: verified model-pack install, not a self-contained inference runtime
 - Shipped from source: opted-in direct official EN→ES pack download or offline user import, pinned SHA-256 and exact size, archive safety, metadata, local Argos inference proof. No model is shipped inside EXE; raw documents never leave 127.0.0.1.
 - **Still open #29**: replace separately installed Python+Argos with self-contained optional language runtime; license-cleared model index, limited disk/RAM UI, download progress, idempotent rollback/uninstall and multiple direct model pairs (especially VI↔EN).
+
+### V0.7.0 limited native XLSX text labels
+- Implement native OOXML sharedStrings and inlineStr label translation with intact formulas, numbers, styles, cells, merges, and full per-cell audit. Rich text and complex workbooks are blocked, layout/meaning require manual review.
+- Next: language pack manager without separately installed Python (#29), native glossary/memory, stable CJK/VI language models, spreadsheet visual-diff before broader document classes.

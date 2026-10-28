@@ -2,7 +2,7 @@
 """Generate small, public-domain CI test documents. No user files or paid services."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from PIL import Image, ImageDraw, ImageFont
+import sys
 
 ROOT=Path(__file__).resolve().parent / "generated"
 ROOT.mkdir(exist_ok=True)
@@ -32,6 +32,10 @@ save('real_sheet.xlsx',{
  'xl/_rels/workbook.xml.rels':C+f'<Relationships xmlns="{PKG}"><Relationship Id="rId1" Type="{OD}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>',
  'xl/worksheets/sheet1.xml':worksheet
 })
+if '--xlsx-only' in sys.argv:
+    print("Generated valid XLSX fixture for real Argos/LibreOffice test:",ROOT/'real_sheet.xlsx')
+    sys.exit(0)
+from PIL import Image, ImageDraw, ImageFont
 im=Image.new('RGB',(1500,330),'white')
 draw=ImageDraw.Draw(im)
 font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',84)

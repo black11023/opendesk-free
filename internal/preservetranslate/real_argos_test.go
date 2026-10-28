@@ -4,6 +4,7 @@ package preservetranslate
 
 import (
  "bytes"
+ "archive/zip"
  "context"
  "io"
  "os"
@@ -69,4 +70,71 @@ func TestRealApprovedModelInstall(t *testing.T){
  if err!=nil{t.Fatalf("actual Go model-pack installer rejected official pinned model: %v",err)}
  if receipt.Status!="READY"||receipt.Pair!="en->es"||receipt.SHA256!=approvedPacks[0].SHA256{t.Fatalf("wrong installer receipt: %+v",receipt)}
  t.Log("PASS: offline Go intake, SHA-256/ZIP validation, Argos package install and live inference")
+}
+
+
+func TestRealArgosXLSX(t *testing.T){
+ ctx:=context.Background()
+ status:=ProbeArgos(ctx)
+ if !status.Installed||!strings.Contains(strings.Join(status.DirectPairs,","),"en->es"){
+   t.Fatalf("installed direct Argos en->es required: %+v",status)
+ }
+ // Reuse the same standards-conformant XLSX package that LibreOffice
+ // integration tests already open successfully; add one formula, one number
+ // and a plain inline translation label without altering the package metadata.
+ fixture,err:=os.ReadFile("../../tests/generated/real_sheet.xlsx")
+ if err!=nil{t.Fatalf("real XLSX fixture not generated: %v",err)}
+ archive,err:=zip.NewReader(bytes.NewReader(fixture),int64(len(fixture)))
+ if err!=nil{t.Fatal(err)}
+ var built bytes.Buffer
+ wz:=zip.NewWriter(&built)
+ for _,part:=range archive.File{
+  if part.Name!="xl/worksheets/sheet1.xml"{
+    if err=wz.Copy(part);err!=nil{t.Fatal(err)}
+    continue
+  }
+  r,e:=part.Open();if e!=nil{t.Fatal(e)}
+  original,e:=io.ReadAll(r);r.Close();if e!=nil{t.Fatal(e)}
+  target:=`<c r="A1" t="inlineStr"><is><t>OPENDESK SHEET 2026</t></is></c>`
+  replacement:=`<c r="A1" t="inlineStr"><is><t>Hello world.</t></is></c><c r="B1" t="n"><v>1250.25</v></c><c r="C1"><f>B1*2</f><v>2500.5</v></c>`
+  if !bytes.Contains(original,[]byte(target)){t.Fatal("generated fixture did not have expected inline cell")}
+  edited:=bytes.Replace(original,[]byte(target),[]byte(replacement),1)
+  header:=part.FileHeader
+  out,e:=wz.CreateHeader(&header);if e!=nil{t.Fatal(e)}
+  if _,e=out.Write(edited);e!=nil{t.Fatal(e)}
+ }
+ if err=wz.Close();err!=nil{t.Fatal(err)}
+ source:=built.Bytes()
+ preserved:=append([]byte(nil),source...)
+ response,err:=TranslateXLSX(ctx,[]engine.Input{{Name:"Budget.xlsx",Data:source}},"en","es",ArgosProvider{})
+ if err!=nil{t.Fatalf("actual EN->ES Argos XLSX translation failed: %v",err)}
+ result:=extractZipPart(t,response.Data,"Budget_es.xlsx")
+ sheet:=string(extractZipPart(t,result,"xl/worksheets/sheet1.xml"))
+ if strings.Contains(sheet,"Hello world."){t.Fatalf("real model did not translate Excel text: %s",sheet)}
+ if !strings.Contains(sheet,"<f>B1*2</f><v>2500.5</v>")||!strings.Contains(sheet,"<v>1250.25</v>"){
+  t.Fatal("formula or number changed during translation")
+ }
+ if !bytes.Equal(preserved,source){t.Fatal("source workbook was changed")}
+ for _,name:=range []string{"xl/workbook.xml","xl/_rels/workbook.xml.rels","_rels/.rels"}{
+  if !bytes.Equal(extractZipPart(t,source,name),extractZipPart(t,result,name)){t.Fatalf("unchanged workbook part was modified: %s",name)}
+ }
+ if !strings.Contains(string(extractZipPart(t,response.Data,"Translation_Audit.csv")),"REVIEW_MEANING_AND_CELL_OVERFLOW"){
+  t.Fatal("complete XLSX audit absent")
+ }
+ dir:=t.TempDir();output:=filepath.Join(dir,"Budget_es.xlsx")
+ if err=os.WriteFile(output,result,0600);err!=nil{t.Fatal(err)}
+ soffice,err:=exec.LookPath("soffice");if err!=nil{t.Fatalf("LibreOffice required: %v",err)}
+ officeCtx,cancel:=context.WithTimeout(ctx,60*time.Second);defer cancel()
+ cmd:=exec.CommandContext(officeCtx,soffice,"-env:UserInstallation=file://"+filepath.ToSlash(filepath.Join(dir,"profile-xlsx")),"--headless","--convert-to","pdf","--outdir",dir,output)
+ logs,err:=cmd.CombinedOutput()
+ if err!=nil{t.Fatalf("LibreOffice rejected translated XLSX: %v: %s",err,logs)}
+ pdfName:=filepath.Join(dir,"Budget_es.pdf")
+ pdf,err:=os.Open(pdfName);if err!=nil{t.Fatalf("LibreOffice did not create PDF: %v; stdout=%s",err,logs)}
+ defer pdf.Close()
+ hdr:=make([]byte,5)
+ if _,err=io.ReadFull(pdf,hdr);err!=nil||string(hdr)!="%PDF-"{t.Fatalf("invalid PDF: %v",err)}
+ extracted,err:=exec.CommandContext(officeCtx,"pdftotext",pdfName,"-").Output()
+ if err!=nil||len(strings.TrimSpace(string(extracted)))<5{t.Fatalf("rendered Excel PDF lacks searchable text: %v %s",err,extracted)}
+ if strings.Contains(string(extracted),"Hello world."){t.Fatal("LibreOffice rendered untranslated text")}
+ t.Log("PASS: real Argos XLSX translation, unchanged numeric/formula fields and native LibreOffice open/render to PDF")
 }
