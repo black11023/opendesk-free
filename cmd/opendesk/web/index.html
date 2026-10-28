@@ -27,6 +27,7 @@
 <label><span data-en="Or select an offline .argosmodel file" data-vi="Hoặc chọn tệp .argosmodel có sẵn">Or select a local model pack</span><input type="file" id="model-local-file" accept=".argosmodel"/></label>
 </div>
 <button class="ocr-retry" type="button" id="model-install-file" disabled data-en="Verify & install selected file" data-vi="Kiểm chứng và cài tệp đã chọn">Verify & install selected file</button>
+<button id="model-cancel" class="ocr-retry" type="button" hidden data-en="Cancel model installation" data-vi="Hủy cài gói ngôn ngữ">Cancel model installation</button>
 <p id="model-install-status" class="ocr-status" role="status" aria-live="polite"></p>
 </section>
 <section id="ocr-options" class="ocr-box" hidden aria-label="OCR settings"><div id="ocr-heading" class="ocr-heading"></div><p id="ocr-note" class="ocr-note"></p><div id="ocr-status" class="ocr-status" role="status" aria-live="polite"></div><div id="pdf-ocr-status" class="ocr-status" role="status" aria-live="polite" hidden></div><button class="ocr-retry" id="ocr-retry" type="button"></button>
@@ -96,6 +97,7 @@ function renderModelManager(){
  $('model-pack-select').disabled=state.modelBusy||!state.modelCatalog.length;
  $('model-local-file').disabled=state.modelBusy;
  $('model-pack-consent').disabled=state.modelBusy;
+ $('model-cancel').hidden=!state.modelBusy;
 }
 async function loadApprovedPacks(){
  try{
@@ -135,6 +137,7 @@ async function installApprovedPack(mode){
 }
 $('model-download').addEventListener('click',()=>installApprovedPack('download'));
 $('model-install-file').addEventListener('click',()=>installApprovedPack('import'));
+$('model-cancel').addEventListener('click',()=>state.activeModelRequest?.abort());
 function translationReady(){return state.translationStatus?.installed===true&&!!state.sourceLang&&!!state.targetLang&&state.translationStatus.direct_pairs?.includes(state.sourceLang+'->'+state.targetLang)}
 function renderTranslateOptions(){
  const isTranslation=state.op==='translate-docx';$('translate-options').hidden=!isTranslation;if(!isTranslation)return;
