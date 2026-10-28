@@ -139,3 +139,7 @@ This is a proposed plan, not an assurance of delivery dates. Each gate requires 
 - Strict single-run paragraph rewrite retaining ZIP entries; reject complex formatting, headers/footers, Word fields, bookmarks, unsigned/signature risks; FormGuard locks numbers, identifiers, dates and rejects tampered markers.
 - Generate translated editable DOCX, full paragraph audit CSV and source/output SHA manifest in review ZIP. Real language model quality test on Windows is still required before marking stable.
 - Next: locally managed signed/checksummed model packs without Python prerequisite, multi-run formatting mapping, multi-target batches and layout visual diff.
+
+### V0.6.9: verified model-pack install, not a self-contained inference runtime
+- Shipped from source: opted-in direct official EN→ES pack download or offline user import, pinned SHA-256 and exact size, archive safety, metadata, local Argos inference proof. No model is shipped inside EXE; raw documents never leave 127.0.0.1.
+- **Still open #29**: replace separately installed Python+Argos with self-contained optional language runtime; license-cleared model index, limited disk/RAM UI, download progress, idempotent rollback/uninstall and multiple direct model pairs (especially VI↔EN).

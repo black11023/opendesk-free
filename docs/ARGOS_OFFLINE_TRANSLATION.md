@@ -12,3 +12,9 @@ OpenDesk Free v0.6.8 can call a *locally installed* Argos Translate Python envir
 The app never performs silent pivot translations or calls cloud services. No model authorizations/verified signing are implied by installed packages. Avoid models from untrusted websites. A successful output means only that the Word XML remains syntactically valid and protected placeholders survived; it is NOT a certified translation.
 
 References: https://argos-translate.readthedocs.io/en/stable/ and https://github.com/argosopentech/argos-translate .
+
+## V0.6.9: approved model setup inside the app
+
+When a local Python + Argos inference engine already exists, choose **Translate DOCX**, scroll to **Verified language packs**, select the pinned English → Spanish v1.0 package, read its vendor URL/size/SHA-256 and third-party license notice, tick consent and choose either **Download & install verified pack** or select an already downloaded `.argosmodel` and **Verify & install selected file**. The app never silently contacts the vendor; both modes refuse mismatched ZIP/metadata/digest. A successful response includes a live Argos inference proof. Cancel is available during processing.
+
+The in-app installer currently approves **only EN→ES**. Other language pairs can still be used if the user separately installed them in Argos; do not mistake candidate languages for models present on disk. A self-contained signed inference runtime and multiple checked language packages are not implemented.

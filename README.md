@@ -2,15 +2,15 @@
 
 **Free, privacy-first document tools — multilingual translation and layout preservation are our development priorities.**
 
-[Windows downloads](https://github.com/black11023/opendesk-free/releases/tag/v0.6.8-preview.1) · [Roadmap](docs/PRESERVETRANSLATE_SRS_V1.md) · [Report an issue](https://github.com/black11023/opendesk-free/issues) · [Contributing](CONTRIBUTING.md) · [MIT License](LICENSE)
+[Windows downloads](https://github.com/black11023/opendesk-free/releases/tag/v0.6.9-preview.1) · [Roadmap](docs/PRESERVETRANSLATE_SRS_V1.md) · [Report an issue](https://github.com/black11023/opendesk-free/issues) · [Contributing](CONTRIBUTING.md) · [MIT License](LICENSE)
 
-## Latest interface — v0.6.8 Preview 1
+## Latest interface — v0.6.9 Preview 1
 
-![OpenDesk Free v0.6.8 current English-language interface](assets/desktop-preview.png)
+![OpenDesk Free v0.6.9 current English-language interface](assets/desktop-preview.png)
 
 *Actual English-language Chromium screenshot from the compiled application, captured in GitHub Actions. The workflow refreshes this image when the tested UI changes on `main`. Screenshot evidence is not a claim that unfinished functions are available.*
 
-The v0.6.8 workbench is deliberately focused: **FormGuard**, image OCR, and scanned-PDF OCR. Generic PDF merge/split/rotate, image-to-PDF, miscellaneous conversions and the external-app directory are **no longer shown in the main interface**. Older processing routes remain temporarily for compatibility.
+The v0.6.9 workbench focuses on **FormGuard**, **limited DOCX offline translation**, image OCR, and scanned-PDF OCR. Generic PDF merge/split/rotate, image-to-PDF, miscellaneous conversions and the external-app directory are **no longer shown in the main interface**. Older processing routes remain temporarily for compatibility.
 
 ### What works today?
 
@@ -22,11 +22,11 @@ The v0.6.8 workbench is deliberately focused: **FormGuard**, image OCR, and scan
 | **Translate DOCX — direct offline model beta** | **Optional, limited** | If Python + Argos Translate and a direct language model are installed: translate simple single-run DOCX paragraphs and export an auditable ZIP; complex formatting is BLOCKED, no layout guarantee |
 | **PreserveTranslate — full multilingual translation** | **In development** | DOCX rich formatting, Excel, PowerPoint, PDF and more complete preservation/automated quality checks are not yet available |
 
-**Important:** The 46 candidate language tags in the source code are not 46 working translation models. No language models are bundled. A limited DOCX beta runs only when the user has separately installed Python, Argos Translate and the appropriate direct model. FormGuard checks *structure*; it does **not translate** documents or certify layout fidelity.
+**Important:** The 46 candidate language tags in the source code are not 46 working translation models. No language models or Python runtime are bundled. A limited DOCX beta runs with a separately installed Python + Argos Translate engine. A new in-app manager can explicitly download/import one pinned, verified English → Spanish language pack on PCs that already have that engine; it never downloads anything in the background. FormGuard checks *structure*; it does **not translate** documents or certify layout fidelity.
 
 ### Download and use
 
-1. Visit the [v0.6.8 Preview 1 release](https://github.com/black11023/opendesk-free/releases/tag/v0.6.8-preview.1) and choose the Windows x64 **Setup** or **Portable** executable.
+1. Visit the [v0.6.9 Preview 1 release](https://github.com/black11023/opendesk-free/releases/tag/v0.6.9-preview.1) and choose the Windows x64 **Setup** or **Portable** executable.
 2. Compare its SHA-256 against the release's `SHA256SUMS.txt`.
 3. Start OpenDesk. The interface defaults to English; you may switch it to Vietnamese.
 4. Select **FormGuard** to inspect a Word, Excel or PowerPoint document, or use OCR after installing the optional local tools described in the [OCR setup guide](docs/OCR_LOCAL_SETUP.md).
@@ -35,7 +35,7 @@ Files are processed on the user's computer through a service bound to `127.0.0.1
 
 ### Windows download security
 
-> **Unsigned preview — antivirus incident still open.** Chrome previously blocked an older `0.6.3` Portable download as a suspected virus. See [security issue #14](https://github.com/black11023/opendesk-free/issues/14). The v0.6.8 CI checks executable hashes and scans both exact release EXEs with current ClamAV definitions, including an EICAR-positive-control check, but that does **not** guarantee acceptance by Chrome or Microsoft Defender. Do not disable antivirus or bypass a security warning to run this software. Publisher signing is tracked in [issue #17](https://github.com/black11023/opendesk-free/issues/17).
+> **Unsigned preview — antivirus incident still open.** Chrome previously blocked an older `0.6.3` Portable download as a suspected virus. See [security issue #14](https://github.com/black11023/opendesk-free/issues/14). The v0.6.9 CI checks executable hashes and scans both exact release EXEs with current ClamAV definitions, including an EICAR-positive-control check, but that does **not** guarantee acceptance by Chrome or Microsoft Defender. Do not disable antivirus or bypass a security warning to run this software. Publisher signing is tracked in [issue #17](https://github.com/black11023/opendesk-free/issues/17).
 
 **Automated evidence:** [Windows installer + antivirus](https://github.com/black11023/opendesk-free/actions/runs/40630593417) · [Real Chromium UI + screenshots](https://github.com/black11023/opendesk-free/actions/runs/40630593481) · [Office/OCR integration](https://github.com/black11023/opendesk-free/actions/runs/40630593497). These are automated checks on the release source; an individual user's Windows PC remains a separate acceptance environment.
 
@@ -64,7 +64,7 @@ Windows Setup also builds from `./cmd/setup`. See [Windows CI](.github/workflows
 
 **License:** MIT for original OpenDesk Free code. Optional third-party software and language-model packages retain their individual license terms.
 
-### V0.6.8 Preview — optional local DOCX translation beta
+### V0.6.9 Preview — optional local DOCX translation beta
 
 - One DOCX per task, up to 12 MB. Only paragraphs with a single ordinary text run can be translated without losing bold/italic markup; complex runs, fields, headers/footers and unsupported document structures are blocked.
 - User-selected source/target pair must be installed **directly** in local Argos Translate; no silent pivot via English, cloud API, model download or signup.
@@ -73,3 +73,10 @@ Windows Setup also builds from `./cmd/setup`. See [Windows CI](.github/workflows
 - **Limitations:** Argos and language model packages are optional and require separate installation. Model-package integrity/licensing and actual translation quality need independent review; page layout, line wrapping, rich formatting and official translations are not certified. Do not use output as an approved contract without review.
 
 See [offline translation setup](docs/ARGOS_OFFLINE_TRANSLATION.md).
+
+### V0.6.9 Preview — verified local language-pack installer (partial #29)
+
+- English/Vietnamese settings now display a strictly approved direct **English→Spanish Argos model v1.0** (87,503,191 bytes), its vendor URL and pinned SHA-256. User consent and explicit button are required before any network access.
+- Two real workflows: **Download & install** the exact approved model or **Verify & import** an existing offline `.argosmodel`. Both use the same signed-off digest, safe ZIP inspection, archive/path/size checks, metadata language match and actual post-install Argos translation probe.
+- Model download is initiated by the user only; no cloud document uploads. The original DOCX and installed models are not removed during app updates. Failed verification never installs a model.
+- **Partial usability**: The Argos inference engine still requires the user's existing Python/Argos installation; installing that engine without Python and model licensing/redistribution research remain issue #29. This release does **not** bundle models, auto-install Python, certify third-party model licensing, support every listed language, or preserve complex document layouts. Do not disable antivirus warnings to use unsigned previews.

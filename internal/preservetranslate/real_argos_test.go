@@ -59,3 +59,14 @@ func TestRealArgosDOCX(t *testing.T){
  if strings.Contains(string(rendered),"Hello world."){t.Fatalf("Office still renders original source text: %s",rendered)}
  t.Log("PASS: genuine Argos inference, byte-unchanged source, audit and LibreOffice open/render to searchable PDF")
 }
+
+func TestRealApprovedModelInstall(t *testing.T){
+ path:=os.Getenv("ARGOS_TEST_MODEL")
+ if path==""{t.Fatal("real pinned Argos model path required")}
+ file,err:=os.Open(path);if err!=nil{t.Fatal(err)}
+ defer file.Close()
+ receipt,err:=InstallApprovedModel(context.Background(),"argos-en-es-1.0",file)
+ if err!=nil{t.Fatalf("actual Go model-pack installer rejected official pinned model: %v",err)}
+ if receipt.Status!="READY"||receipt.Pair!="en->es"||receipt.SHA256!=approvedPacks[0].SHA256{t.Fatalf("wrong installer receipt: %+v",receipt)}
+ t.Log("PASS: offline Go intake, SHA-256/ZIP validation, Argos package install and live inference")
+}

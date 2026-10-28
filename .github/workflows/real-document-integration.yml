@@ -121,18 +121,13 @@ jobs:
               print("Real Argos package ZIP structure and language metadata checked")
           PY
           echo "ARGOS_TEST_MODEL=$path" >> "$GITHUB_ENV"
-      - name: Install and verify isolated direct Argos language model
-        shell: bash
+      - name: Install and test approved model through actual OpenDesk Go installer
         run: |
-          set -euo pipefail
-          python - <<'PY'
-          import os
-          import argostranslate.package as package
-          package.install_from_path(os.environ["ARGOS_TEST_MODEL"])
-          installed=package.get_installed_packages()
-          assert any(x.from_code=="en" and x.to_code=="es" for x in installed),"Model install verification failed"
-          print("Direct offline EN->ES model installed in isolated CI runner")
-          PY
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealApprovedModelInstall      - name: Verify actual Word translation, preserved original and CSV audit
+        run: |
+          go mod tidy
+          go test -tags translation_integration -count=1 -v ./internal/preservetranslate -run '^TestRealArgosDOCX$'
+
       - name: Verify actual Word translation, preserved original and CSV audit
         run: |
           go mod tidy
